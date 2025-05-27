@@ -21,12 +21,22 @@ const BulkLinkModal: React.FC<BulkLinkModalProps> = ({ isOpen, onClose, categori
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [linkedCategories, setLinkedCategories] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isOpen) {
       loadCompanies();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (selectedCompanyId) {
+      loadLinkedCategories();
+    } else {
+      setLinkedCategories(new Set());
+      setSelectedCategories(new Set());
+    }
+  }, [selectedCompanyId]);
 
   const loadCompanies = async () => {
     try {
@@ -43,6 +53,24 @@ const BulkLinkModal: React.FC<BulkLinkModalProps> = ({ isOpen, onClose, categori
     }
   };
 
+  const loadLinkedCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categorias_empresas')
+        .select('categoria_id')
+        .eq('empresa_id', selectedCompanyId);
+
+      if (error) throw error;
+
+      const linkedIds = new Set(data.map(item => item.categoria_id));
+      setLinkedCategories(linkedIds);
+      setSelectedCategories(linkedIds);
+    } catch (error) {
+      console.error('Erro ao carregar categorias vinculadas:', error);
+      setError('Erro ao carregar categorias vinculadas. Tente novamente.');
+    }
+  };
+
   const handleCategoryToggle = (categoryId: string) => {
     const newSelected = new Set(selectedCategories);
     if (newSelected.has(categoryId)) {
@@ -54,16 +82,39 @@ const BulkLinkModal: React.FC<BulkLinkModalProps> = ({ isOpen, onClose, categori
   };
 
   const handleSubmit = async () => {
-    if (!selectedCompanyId || selectedCategories.size === 0) return;
+    if (!selectedCompanyId) return;
 
     setIsSubmitting(true);
     setError(null);
 
     try {
-      await categoryService.bulkLinkCategoriesToCompany(
-        Array.from(selectedCategories),
-        selectedCompanyId
-      );
+      // Remover vínculos existentes
+      const categoriasParaRemover = Array.from(linkedCategories)
+        .filter(id => !selectedCategories.has(id));
+
+      // Adicionar novos vínculos
+      const categoriasParaAdicionar = Array.from(selectedCategories)
+        .filter(id => !linkedCategories.has(id));
+
+      if (categoriasParaRemover.length > 0) {
+        await supabase
+          .from('categorias_empresas')
+          .delete()
+          .eq('empresa_id', selectedCompanyId)
+          .in('categoria_id', categoriasParaRemover);
+      }
+
+      if (categoriasParaAdicionar.length > 0) {
+        const novosVinculos = categoriasParaAdicionar.map(categoryId => ({
+          categoria_id: categoryId,
+          empresa_id: selectedCompanyId
+        }));
+
+        await supabase
+          .from('categorias_empresas')
+          .insert(novosVinculos);
+      }
+
       onClose();
     } catch (error) {
       console.error('Erro ao vincular categorias:', error);
@@ -158,7 +209,7 @@ const BulkLinkModal: React.FC<BulkLinkModalProps> = ({ isOpen, onClose, categori
             </button>
             <button
               onClick={handleSubmit}
-              disabled={isSubmitting || !selectedCompanyId || selectedCategories.size === 0}
+              disabled={isSubmitting || !selectedCompanyId}
               className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center"
             >
               {isSubmitting ? (
@@ -177,4 +228,4 @@ const BulkLinkModal: React.FC<BulkLinkModalProps> = ({ isOpen, onClose, categori
   );
 };
 
-export default BulkLinkModal;
+export default BulkLinkModal

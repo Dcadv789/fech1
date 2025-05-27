@@ -47,6 +47,18 @@ export const categoryService = {
     return data;
   },
 
+  async updateCategory(id: string, category: CreateCategoryDTO): Promise<Category> {
+    const { data, error } = await supabase
+      .from('categorias')
+      .update(category)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   async toggleCategoryActive(id: string, ativo: boolean): Promise<void> {
     const { error } = await supabase
       .from('categorias')

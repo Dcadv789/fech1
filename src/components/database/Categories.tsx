@@ -121,6 +121,11 @@ const Categories: React.FC = () => {
     setIsCompaniesModalOpen(true);
   };
 
+  const handleEdit = (category: Category) => {
+    setSelectedCategory(category);
+    setIsCategoryModalOpen(true);
+  };
+
   return (
     <div>
       <div className="flex justify-between items-start mb-6">
@@ -145,7 +150,7 @@ const Categories: React.FC = () => {
           </button>
           <button 
             onClick={() => setIsBulkLinkModalOpen(true)}
-            className="px-4 py-2 bg-primary-500/70 text-white rounded-lg hover:bg-primary-600/70 transition-colors"
+            className="px-4 py-2 bg-dark-700 text-gray-300 rounded-lg hover:bg-dark-600 hover:text-white transition-colors"
           >
             Vincular em Massa
           </button>
@@ -239,7 +244,7 @@ const Categories: React.FC = () => {
         ) : (
           <CategoryList
             categories={filteredCategories}
-            onEdit={() => {}}
+            onEdit={handleEdit}
             onDelete={handleDeleteCategory}
             onDeleteGroup={handleDeleteGroup}
             onViewDetails={handleViewDetails}
@@ -251,8 +256,12 @@ const Categories: React.FC = () => {
 
       <CategoryModal
         isOpen={isCategoryModalOpen}
-        onClose={() => setIsCategoryModalOpen(false)}
+        onClose={() => {
+          setIsCategoryModalOpen(false);
+          setSelectedCategory(null);
+        }}
         onSave={handleSaveCategory}
+        category={selectedCategory}
       />
 
       <CategoryGroupModal

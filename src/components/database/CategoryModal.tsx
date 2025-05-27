@@ -2,25 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { categoryService } from '../../services/categoryService';
 import { categoryCodeService } from '../../services/categoryCodeService';
-import { CreateCategoryDTO, CategoryGroup } from '../../types/category';
+import { CreateCategoryDTO, CategoryGroup, Category } from '../../types/category';
 
 interface CategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
+  category?: Category | null;
 }
 
-const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }) => {
+const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave, category }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [groups, setGroups] = useState<CategoryGroup[]>([]);
-  const [selectedType, setSelectedType] = useState<'Receita' | 'Despesa'>('Receita');
-  const [categoryCode, setCategoryCode] = useState<string>('');
+  const [selectedType, setSelectedType] = useState<'Receita' | 'Despesa'>(category?.tipo || 'Receita');
+  const [categoryCode, setCategoryCode] = useState<string>(category?.codigo || '');
 
   useEffect(() => {
     if (isOpen) {
       loadGroups();
-      generateNextCode();
+      if (!category) {
+        generateNextCode();
+      }
     }
   }, [isOpen, selectedType]);
 
@@ -46,6 +49,29 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
 
   const handleTypeChange = async (tipo: 'Receita' | 'Despesa') => {
     setSelectedType(tipo);
+    if (!category) {
+      const nextCode = await categoryCodeService.getNextCode(tipo);
+      setCategoryCode(nextCode);
+    }
+  };
+
+  const validateCode = async (code: string, id?: string): Promise<boolean> => {
+    try {
+      const { data } = await supabase
+        .from('categorias')
+        .select('id')
+        .eq('codigo', code)
+        .single();
+
+      if (data && (!id || data.id !== id)) {
+        setError('Já existe uma categoria com este código.');
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Erro ao validar código:', error);
+      return false;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -55,8 +81,17 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
 
     try {
       const formData = new FormData(e.currentTarget);
+      const code = formData.get('codigo') as string;
+
+      // Validar código
+      const isCodeValid = await validateCode(code, category?.id);
+      if (!isCodeValid) {
+        setIsSubmitting(false);
+        return;
+      }
+
       const categoryData: CreateCategoryDTO = {
-        codigo: categoryCode,
+        codigo: code,
         nome: formData.get('nome') as string,
         descricao: formData.get('descricao') as string || undefined,
         tipo: selectedType,
@@ -64,7 +99,11 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
         ativo: true
       };
 
-      await categoryService.createCategory(categoryData);
+      if (category) {
+        await categoryService.updateCategory(category.id, categoryData);
+      } else {
+        await categoryService.createCategory(categoryData);
+      }
       onSave();
     } catch (error) {
       console.error('Erro ao salvar categoria:', error);
@@ -80,7 +119,9 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-dark-800 rounded-xl w-full max-w-md">
         <div className="flex items-center justify-between p-6 border-b border-dark-700">
-          <h2 className="text-xl font-bold text-white">Nova Categoria</h2>
+          <h2 className="text-xl font-bold text-white">
+            {category ? 'Editar Categoria' : 'Nova Categoria'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -112,13 +153,15 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Código
+              Código *
             </label>
             <input
               type="text"
+              name="codigo"
               value={categoryCode}
-              disabled
-              className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white opacity-75"
+              onChange={(e) => setCategoryCode(e.target.value)}
+              className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
+              required
             />
           </div>
 
@@ -129,6 +172,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
             <input
               type="text"
               name="nome"
+              defaultValue={category?.nome}
               required
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             />
@@ -140,6 +184,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
             </label>
             <select
               name="grupo_id"
+              defaultValue={category?.grupo_id}
               required
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             >
@@ -158,6 +203,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
             </label>
             <textarea
               name="descricao"
+              defaultValue={category?.descricao || ''}
               rows={3}
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             />
@@ -186,4 +232,4 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
   );
 };
 
-export default CategoryModal;
+export default CategoryModal
