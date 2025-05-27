@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Pencil, Trash2, Building2, Eye } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Trash2, Building2, Eye, Power } from 'lucide-react';
 import { Category, CategoryGroup } from '../../types/category';
 
 interface CategoryListProps {
@@ -9,6 +9,7 @@ interface CategoryListProps {
   onDeleteGroup: (id: string) => void;
   onViewDetails: (category: Category) => void;
   onManageCompanies: (category: Category) => void;
+  onToggleActive: (category: Category) => void;
 }
 
 interface GroupedCategories {
@@ -24,7 +25,8 @@ const CategoryList: React.FC<CategoryListProps> = ({
   onDelete,
   onDeleteGroup,
   onViewDetails,
-  onManageCompanies
+  onManageCompanies,
+  onToggleActive
 }) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -103,6 +105,7 @@ const CategoryList: React.FC<CategoryListProps> = ({
                     <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Código</th>
                     <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Nome</th>
                     <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Tipo</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Status</th>
                     <th className="px-4 py-2 text-right text-sm font-medium text-gray-400">Ações</th>
                   </tr>
                 </thead>
@@ -121,6 +124,15 @@ const CategoryList: React.FC<CategoryListProps> = ({
                         </span>
                       </td>
                       <td className="px-4 py-2">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          category.ativo
+                            ? 'bg-green-500/10 text-green-500'
+                            : 'bg-red-500/10 text-red-500'
+                        }`}>
+                          {category.ativo ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2">
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => onViewDetails(category)}
@@ -135,6 +147,17 @@ const CategoryList: React.FC<CategoryListProps> = ({
                             title="Gerenciar empresas"
                           >
                             <Building2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => onToggleActive(category)}
+                            className={`p-1.5 ${
+                              category.ativo
+                                ? 'text-green-400 hover:text-green-300'
+                                : 'text-red-400 hover:text-red-300'
+                            } hover:bg-dark-700 rounded transition-colors`}
+                            title={category.ativo ? 'Desativar categoria' : 'Ativar categoria'}
+                          >
+                            <Power size={16} />
                           </button>
                           <button
                             onClick={() => onEdit(category)}

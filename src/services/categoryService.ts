@@ -47,6 +47,15 @@ export const categoryService = {
     return data;
   },
 
+  async toggleCategoryActive(id: string, ativo: boolean): Promise<void> {
+    const { error } = await supabase
+      .from('categorias')
+      .update({ ativo })
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
   async deleteCategory(id: string): Promise<void> {
     const { error } = await supabase
       .from('categorias')
@@ -92,6 +101,19 @@ export const categoryService = {
       .delete()
       .eq('categoria_id', categoryId)
       .eq('empresa_id', empresaId);
+
+    if (error) throw error;
+  },
+
+  async bulkLinkCategoriesToCompany(categoryIds: string[], empresaId: string): Promise<void> {
+    const links = categoryIds.map(categoryId => ({
+      categoria_id: categoryId,
+      empresa_id: empresaId
+    }));
+
+    const { error } = await supabase
+      .from('categorias_empresas')
+      .insert(links);
 
     if (error) throw error;
   }

@@ -5,15 +5,18 @@ import CategoryGroupModal from './CategoryGroupModal';
 import CategoryList from './CategoryList';
 import CategoryDetailsModal from './CategoryDetailsModal';
 import CategoryCompaniesModal from './CategoryCompaniesModal';
+import BulkLinkModal from './BulkLinkModal';
 import { Category } from '../../types/category';
 import { categoryService } from '../../services/categoryService';
 
 const Categories: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'receita' | 'despesa'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isCompaniesModalOpen, setIsCompaniesModalOpen] = useState(false);
+  const [isBulkLinkModalOpen, setIsBulkLinkModalOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -26,7 +29,7 @@ const Categories: React.FC = () => {
 
   useEffect(() => {
     filterCategories();
-  }, [categories, selectedFilter, searchTerm]);
+  }, [categories, selectedFilter, activeFilter, searchTerm]);
 
   const loadCategories = async () => {
     try {
@@ -46,6 +49,12 @@ const Categories: React.FC = () => {
     if (selectedFilter !== 'all') {
       filtered = filtered.filter(category => 
         category.tipo.toLowerCase() === (selectedFilter === 'receita' ? 'Receita' : 'Despesa').toLowerCase()
+      );
+    }
+
+    if (activeFilter !== 'all') {
+      filtered = filtered.filter(category => 
+        activeFilter === 'active' ? category.ativo : !category.ativo
       );
     }
 
@@ -93,6 +102,15 @@ const Categories: React.FC = () => {
     }
   };
 
+  const handleToggleActive = async (category: Category) => {
+    try {
+      await categoryService.toggleCategoryActive(category.id, !category.ativo);
+      await loadCategories();
+    } catch (error) {
+      console.error('Erro ao alterar status da categoria:', error);
+    }
+  };
+
   const handleViewDetails = (category: Category) => {
     setSelectedCategory(category);
     setIsDetailsModalOpen(true);
@@ -124,6 +142,12 @@ const Categories: React.FC = () => {
           >
             <Plus size={20} />
             Novo Grupo
+          </button>
+          <button 
+            onClick={() => setIsBulkLinkModalOpen(true)}
+            className="px-4 py-2 bg-primary-500/70 text-white rounded-lg hover:bg-primary-600/70 transition-colors"
+          >
+            Vincular em Massa
           </button>
         </div>
       </div>
@@ -172,6 +196,38 @@ const Categories: React.FC = () => {
               Despesas
             </button>
           </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveFilter('all')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activeFilter === 'all'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => setActiveFilter('active')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activeFilter === 'active'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+              }`}
+            >
+              Ativos
+            </button>
+            <button
+              onClick={() => setActiveFilter('inactive')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activeFilter === 'inactive'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+              }`}
+            >
+              Inativos
+            </button>
+          </div>
         </div>
       </div>
 
@@ -188,6 +244,7 @@ const Categories: React.FC = () => {
             onDeleteGroup={handleDeleteGroup}
             onViewDetails={handleViewDetails}
             onManageCompanies={handleManageCompanies}
+            onToggleActive={handleToggleActive}
           />
         )}
       </div>
@@ -218,6 +275,12 @@ const Categories: React.FC = () => {
           />
         </>
       )}
+
+      <BulkLinkModal
+        isOpen={isBulkLinkModalOpen}
+        onClose={() => setIsBulkLinkModalOpen(false)}
+        categories={categories}
+      />
     </div>
   );
 };
