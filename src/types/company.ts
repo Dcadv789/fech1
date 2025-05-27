@@ -7,6 +7,7 @@ export interface Company {
   email: string;
   telefone: string;
   data_inicio_contrato: string;
+  data_desativacao: string | null;
   ativo: boolean;
   criado_em: string;
   modificado_em: string;

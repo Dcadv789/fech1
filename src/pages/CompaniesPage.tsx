@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import CompanyFilter from '../components/companies/CompanyFilter';
 import CompanyModal from '../components/companies/CompanyModal';
 import PartnersModal from '../components/companies/PartnersModal';
+import DeactivateModal from '../components/companies/DeactivateModal';
 import CompanyList from '../components/companies/CompanyList';
 import { Company } from '../types/company';
 import { companyService } from '../services/companyService';
@@ -10,14 +11,21 @@ import { companyService } from '../services/companyService';
 const CompaniesPage: React.FC = () => {
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const [isPartnersModalOpen, setIsPartnersModalOpen] = useState(false);
+  const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   useEffect(() => {
     loadCompanies();
   }, []);
+
+  useEffect(() => {
+    filterCompanies();
+  }, [companies, searchTerm, statusFilter]);
 
   const loadCompanies = async () => {
     try {
@@ -31,13 +39,34 @@ const CompaniesPage: React.FC = () => {
     }
   };
 
-  const handleSearch = (term: string) => {
-    const filtered = companies.filter(company => 
-      company.razao_social.toLowerCase().includes(term.toLowerCase()) ||
-      (company.nome_fantasia && company.nome_fantasia.toLowerCase().includes(term.toLowerCase())) ||
-      company.cnpj.includes(term)
-    );
+  const filterCompanies = () => {
+    let filtered = companies;
+
+    // Aplicar filtro de busca
+    if (searchTerm) {
+      filtered = filtered.filter(company => 
+        company.razao_social.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (company.nome_fantasia && company.nome_fantasia.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        company.cnpj.includes(searchTerm)
+      );
+    }
+
+    // Aplicar filtro de status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(company => 
+        statusFilter === 'active' ? company.ativo : !company.ativo
+      );
+    }
+
     setFilteredCompanies(filtered);
+  };
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  const handleStatusFilter = (status: 'all' | 'active' | 'inactive') => {
+    setStatusFilter(status);
   };
 
   const handleEdit = (company: Company) => {
@@ -48,6 +77,24 @@ const CompaniesPage: React.FC = () => {
   const handleManagePartners = (company: Company) => {
     setSelectedCompany(company);
     setIsPartnersModalOpen(true);
+  };
+
+  const handleToggleActive = (company: Company) => {
+    if (company.ativo) {
+      setSelectedCompany(company);
+      setIsDeactivateModalOpen(true);
+    } else {
+      handleActivate(company.id);
+    }
+  };
+
+  const handleActivate = async (id: string) => {
+    try {
+      await companyService.activateCompany(id);
+      await loadCompanies();
+    } catch (error) {
+      console.error('Erro ao ativar empresa:', error);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -71,6 +118,16 @@ const CompaniesPage: React.FC = () => {
     setSelectedCompany(null);
   };
 
+  const handleCloseDeactivateModal = () => {
+    setIsDeactivateModalOpen(false);
+    setSelectedCompany(null);
+  };
+
+  const handleDeactivateConfirm = async () => {
+    await loadCompanies();
+    handleCloseDeactivateModal();
+  };
+
   const handleSave = async () => {
     await loadCompanies();
     handleCloseCompanyModal();
@@ -86,12 +143,15 @@ const CompaniesPage: React.FC = () => {
       </div>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="w-full sm:w-96">
-          <CompanyFilter onSearch={handleSearch} />
+        <div className="w-full">
+          <CompanyFilter 
+            onSearch={handleSearch}
+            onStatusFilter={handleStatusFilter}
+          />
         </div>
         <button
           onClick={() => setIsCompanyModalOpen(true)}
-          className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
         >
           <Plus size={20} className="mr-2" />
           Nova Empresa
@@ -108,6 +168,7 @@ const CompaniesPage: React.FC = () => {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onManagePartners={handleManagePartners}
+          onToggleActive={handleToggleActive}
         />
       )}
 
@@ -119,11 +180,19 @@ const CompaniesPage: React.FC = () => {
       />
 
       {selectedCompany && (
-        <PartnersModal
-          isOpen={isPartnersModalOpen}
-          onClose={handleClosePartnersModal}
-          company={selectedCompany}
-        />
+        <>
+          <PartnersModal
+            isOpen={isPartnersModalOpen}
+            onClose={handleClosePartnersModal}
+            company={selectedCompany}
+          />
+          <DeactivateModal
+            isOpen={isDeactivateModalOpen}
+            onClose={handleCloseDeactivateModal}
+            onConfirm={handleDeactivateConfirm}
+            company={selectedCompany}
+          />
+        </>
       )}
     </div>
   );

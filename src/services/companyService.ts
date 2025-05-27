@@ -59,5 +59,39 @@ export const companyService = {
       .eq('id', id);
 
     if (error) throw error;
+  },
+
+  async deactivateCompany(id: string, deactivationDate: string): Promise<Company> {
+    // Converter a data para o fuso horário de São Paulo
+    const date = new Date(deactivationDate);
+    const spDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    
+    const { data, error } = await supabase
+      .from('empresas')
+      .update({
+        ativo: false,
+        data_desativacao: spDate.toISOString().split('T')[0]
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async activateCompany(id: string): Promise<Company> {
+    const { data, error } = await supabase
+      .from('empresas')
+      .update({
+        ativo: true,
+        data_desativacao: null
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 };

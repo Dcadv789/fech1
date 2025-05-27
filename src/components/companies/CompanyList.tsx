@@ -1,23 +1,17 @@
 import React from 'react';
 import { Building2, Mail, Phone, Calendar, Pencil, Trash2, Power, Users } from 'lucide-react';
 import { Company } from '../../types/company';
+import { formatCNPJ, formatPhoneNumber, calculateContractTime } from '../../utils/formatters';
 
 interface CompanyListProps {
   companies: Company[];
   onEdit: (company: Company) => void;
   onDelete: (id: string) => void;
   onManagePartners: (company: Company) => void;
+  onToggleActive: (company: Company) => void;
 }
 
-const CompanyList: React.FC<CompanyListProps> = ({ companies, onEdit, onDelete, onManagePartners }) => {
-  const calcularTempoContrato = (dataInicio: string) => {
-    const inicio = new Date(dataInicio);
-    const hoje = new Date();
-    const diffMeses = (hoje.getFullYear() - inicio.getFullYear()) * 12 + 
-                     (hoje.getMonth() - inicio.getMonth());
-    return diffMeses;
-  };
-
+const CompanyList: React.FC<CompanyListProps> = ({ companies, onEdit, onDelete, onManagePartners, onToggleActive }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
       {companies.length === 0 ? (
@@ -48,7 +42,7 @@ const CompanyList: React.FC<CompanyListProps> = ({ companies, onEdit, onDelete, 
                     )}
                   </div>
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 flex gap-2">
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     company.ativo 
                       ? 'bg-green-500/10 text-green-500' 
@@ -56,6 +50,11 @@ const CompanyList: React.FC<CompanyListProps> = ({ companies, onEdit, onDelete, 
                   }`}>
                     {company.ativo ? 'Ativo' : 'Inativo'}
                   </span>
+                  {company.data_desativacao && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-gray-500/10 text-gray-400">
+                      Desativado em: {new Date(company.data_desativacao).toLocaleDateString('pt-BR')}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -63,7 +62,7 @@ const CompanyList: React.FC<CompanyListProps> = ({ companies, onEdit, onDelete, 
             <div className="space-y-3 mb-6">
               <div className="flex items-center text-gray-300">
                 <span className="text-xs text-gray-400 w-24">CNPJ:</span>
-                <span className="text-sm">{company.cnpj}</span>
+                <span className="text-sm">{formatCNPJ(company.cnpj)}</span>
               </div>
               
               <div className="flex items-center text-gray-300">
@@ -73,16 +72,13 @@ const CompanyList: React.FC<CompanyListProps> = ({ companies, onEdit, onDelete, 
               
               <div className="flex items-center text-gray-300">
                 <span className="text-xs text-gray-400 w-24">Telefone:</span>
-                <span className="text-sm">{company.telefone}</span>
+                <span className="text-sm">{formatPhoneNumber(company.telefone)}</span>
               </div>
               
               <div className="flex items-center text-gray-300">
-                <span className="text-xs text-gray-400 w-24">Início Contrato:</span>
+                <span className="text-xs text-gray-400 w-24">Contrato:</span>
                 <span className="text-sm">
-                  {new Date(company.data_inicio_contrato).toLocaleDateString('pt-BR')}
-                  <span className="text-primary-400 ml-2">
-                    ({calcularTempoContrato(company.data_inicio_contrato)} meses)
-                  </span>
+                  {calculateContractTime(company.data_inicio_contrato)}
                 </span>
               </div>
             </div>
@@ -103,7 +99,7 @@ const CompanyList: React.FC<CompanyListProps> = ({ companies, onEdit, onDelete, 
                 Sócios
               </button>
               <button
-                onClick={() => {/* Toggle ativo */}}
+                onClick={() => onToggleActive(company)}
                 className={`px-3 py-2 text-sm ${
                   company.ativo 
                     ? 'text-red-400 hover:text-red-300' 
