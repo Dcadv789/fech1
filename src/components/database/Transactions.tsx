@@ -1,7 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Calendar, Plus, Upload } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 const Transactions: React.FC = () => {
+  const [selectedMonth, setSelectedMonth] = useState<number>(0);
+  const [selectedYear, setSelectedYear] = useState<number>(0);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+
+  useEffect(() => {
+    // Definir mês anterior e ano atual como padrão
+    const currentDate = new Date();
+    const previousMonth = currentDate.getMonth(); // 0-11
+    setSelectedMonth(previousMonth);
+    setSelectedYear(currentDate.getFullYear());
+
+    loadAvailableYears();
+  }, []);
+
+  const loadAvailableYears = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('lancamentos')
+        .select('ano')
+        .order('ano', { ascending: false });
+
+      if (error) throw error;
+
+      const years = [...new Set(data?.map(item => item.ano))];
+      setAvailableYears(years.length > 0 ? years : [new Date().getFullYear()]);
+    } catch (error) {
+      console.error('Erro ao carregar anos:', error);
+    }
+  };
+
+  const months = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+
   return (
     <div>
       <div className="flex justify-between items-start mb-6">
@@ -32,15 +68,24 @@ const Transactions: React.FC = () => {
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
           <div className="flex gap-4">
-            <select className="px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-white focus:outline-none focus:border-primary-500">
-              <option value="all">Tipo</option>
-              <option value="receita">Receita</option>
-              <option value="despesa">Despesa</option>
+            <select 
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-white focus:outline-none focus:border-primary-500"
+            >
+              {months.map((month, index) => (
+                <option key={index} value={index}>{month}</option>
+              ))}
             </select>
-            <button className="px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-white hover:bg-dark-700 transition-colors flex items-center gap-2">
-              <Calendar size={20} />
-              Período
-            </button>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-white focus:outline-none focus:border-primary-500"
+            >
+              {availableYears.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
             <button className="px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-white hover:bg-dark-700 transition-colors flex items-center gap-2">
               <Filter size={20} />
               Filtros
@@ -56,4 +101,4 @@ const Transactions: React.FC = () => {
   );
 };
 
-export default Transactions
+export default Transactions;

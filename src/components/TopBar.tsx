@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Bell, ChevronDown, Settings } from 'lucide-react';
 import ProfileMenu from './ProfileMenu';
 import SettingsMenu from './SettingsMenu';
@@ -6,6 +6,21 @@ import SettingsMenu from './SettingsMenu';
 const TopBar: React.FC = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setIsSettingsMenuOpen(false);
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const toggleProfileMenu = () => {
     setIsProfileMenuOpen(!isProfileMenuOpen);
@@ -31,7 +46,7 @@ const TopBar: React.FC = () => {
               <Bell size={20} />
               <span className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full"></span>
             </button>
-            <div className="relative">
+            <div className="relative" ref={settingsRef}>
               <button
                 className="flex items-center space-x-3 px-4 py-2.5 min-w-[200px] rounded-lg text-dark-400 hover:bg-dark-800 hover:text-white"
                 onClick={toggleSettingsMenu}
