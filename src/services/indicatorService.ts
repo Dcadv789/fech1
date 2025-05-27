@@ -82,5 +82,55 @@ export const indicatorService = {
       .eq('empresa_id', empresaId);
 
     if (error) throw error;
+  },
+
+  async getIndicatorComposicao(indicatorId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('indicadores_composicao')
+      .select('*')
+      .eq('indicador_base_id', indicatorId);
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async saveIndicatorCategories(indicatorId: string, categoryIds: string[]): Promise<void> {
+    // Primeiro remove composições existentes
+    await supabase
+      .from('indicadores_composicao')
+      .delete()
+      .eq('indicador_base_id', indicatorId);
+
+    // Insere novas composições
+    const composicoes = categoryIds.map(categoryId => ({
+      indicador_base_id: indicatorId,
+      componente_categoria_id: categoryId
+    }));
+
+    const { error } = await supabase
+      .from('indicadores_composicao')
+      .insert(composicoes);
+
+    if (error) throw error;
+  },
+
+  async saveIndicatorComponents(indicatorId: string, componentIds: string[]): Promise<void> {
+    // Primeiro remove composições existentes
+    await supabase
+      .from('indicadores_composicao')
+      .delete()
+      .eq('indicador_base_id', indicatorId);
+
+    // Insere novas composições
+    const composicoes = componentIds.map(componentId => ({
+      indicador_base_id: indicatorId,
+      componente_indicador_id: componentId
+    }));
+
+    const { error } = await supabase
+      .from('indicadores_composicao')
+      .insert(composicoes);
+
+    if (error) throw error;
   }
 };
