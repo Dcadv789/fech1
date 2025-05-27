@@ -17,7 +17,6 @@ export const partnerService = {
         throw error;
       }
 
-      console.log('Sócios encontrados:', data);
       return data || [];
     } catch (error) {
       console.error('Erro inesperado ao buscar sócios:', error);
@@ -29,16 +28,18 @@ export const partnerService = {
     try {
       console.log('Criando sócio:', partner);
 
-      // Garantir que percentual seja um número
-      const partnerData = {
-        ...partner,
-        percentual: Number(partner.percentual)
-      };
+      if (!partner.empresa_id) {
+        throw new Error('ID da empresa é obrigatório');
+      }
+
+      if (typeof partner.percentual !== 'number' || isNaN(partner.percentual)) {
+        throw new Error('Percentual inválido');
+      }
 
       const { data, error } = await supabase
         .from('socios')
-        .insert(partnerData)
-        .select('*')
+        .insert([partner])
+        .select()
         .single();
 
       if (error) {
@@ -46,7 +47,10 @@ export const partnerService = {
         throw error;
       }
 
-      console.log('Sócio criado com sucesso:', data);
+      if (!data) {
+        throw new Error('Erro ao criar sócio: nenhum dado retornado');
+      }
+
       return data;
     } catch (error) {
       console.error('Erro inesperado ao criar sócio:', error);
@@ -56,21 +60,16 @@ export const partnerService = {
 
   async deletePartner(id: string): Promise<void> {
     try {
-      console.log('Excluindo sócio:', id);
-      
       const { error } = await supabase
         .from('socios')
         .delete()
         .eq('id', id);
 
       if (error) {
-        console.error('Erro ao excluir sócio:', error);
         throw error;
       }
-
-      console.log('Sócio excluído com sucesso');
     } catch (error) {
-      console.error('Erro inesperado ao excluir sócio:', error);
+      console.error('Erro ao excluir sócio:', error);
       throw error;
     }
   }

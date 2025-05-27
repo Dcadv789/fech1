@@ -20,11 +20,16 @@ const PartnerForm: React.FC<PartnerFormProps> = ({ companyId, onSubmit, onCancel
       const form = e.currentTarget;
       const formData = new FormData(form);
       
+      const percentualValue = formData.get('percentual');
+      if (!percentualValue || isNaN(Number(percentualValue))) {
+        throw new Error('Percentual inválido');
+      }
+
       const partnerData: CreatePartnerDTO = {
         empresa_id: companyId,
         nome: formData.get('nome') as string,
         cpf: formData.get('cpf') as string,
-        percentual: parseFloat(formData.get('percentual') as string),
+        percentual: Number(percentualValue),
         email: formData.get('email') as string || undefined,
         telefone: formData.get('telefone') as string || undefined,
       };
@@ -32,7 +37,8 @@ const PartnerForm: React.FC<PartnerFormProps> = ({ companyId, onSubmit, onCancel
       await onSubmit(partnerData);
       form.reset();
     } catch (err) {
-      setError('Erro ao salvar sócio. Tente novamente.');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao salvar sócio. Tente novamente.';
+      setError(errorMessage);
       console.error('Erro ao salvar sócio:', err);
     } finally {
       setIsSubmitting(false);
@@ -131,4 +137,4 @@ const PartnerForm: React.FC<PartnerFormProps> = ({ companyId, onSubmit, onCancel
   );
 };
 
-export default PartnerForm
+export default PartnerForm;

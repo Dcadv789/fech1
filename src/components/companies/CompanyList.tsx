@@ -6,9 +6,10 @@ interface CompanyListProps {
   companies: Company[];
   onEdit: (company: Company) => void;
   onDelete: (id: string) => void;
+  onManagePartners: (company: Company) => void;
 }
 
-const CompanyList: React.FC<CompanyListProps> = ({ companies, onEdit, onDelete }) => {
+const CompanyList: React.FC<CompanyListProps> = ({ companies, onEdit, onDelete, onManagePartners }) => {
   const calcularTempoContrato = (dataInicio: string) => {
     const inicio = new Date(dataInicio);
     const hoje = new Date();
@@ -84,14 +85,6 @@ const CompanyList: React.FC<CompanyListProps> = ({ companies, onEdit, onDelete }
                   </span>
                 </span>
               </div>
-
-              <div className="flex items-center text-gray-300">
-                <span className="text-xs text-gray-400 w-24">Sócios:</span>
-                <div className="flex items-center">
-                  <Users size={16} className="mr-2 text-gray-400" />
-                  <span className="text-sm">0 sócios</span>
-                </div>
-              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t border-dark-800">
@@ -101,6 +94,13 @@ const CompanyList: React.FC<CompanyListProps> = ({ companies, onEdit, onDelete }
               >
                 <Pencil size={16} className="mr-2" />
                 Editar
+              </button>
+              <button
+                onClick={() => onManagePartners(company)}
+                className="px-3 py-2 text-sm text-primary-400 hover:text-primary-300 hover:bg-dark-800 rounded-lg transition-colors flex items-center"
+              >
+                <Users size={16} className="mr-2" />
+                Sócios
               </button>
               <button
                 onClick={() => {/* Toggle ativo */}}

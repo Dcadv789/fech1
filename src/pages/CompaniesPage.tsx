@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import CompanyFilter from '../components/companies/CompanyFilter';
 import CompanyModal from '../components/companies/CompanyModal';
+import PartnersModal from '../components/companies/PartnersModal';
 import CompanyList from '../components/companies/CompanyList';
 import { Company } from '../types/company';
 import { companyService } from '../services/companyService';
 
 const CompaniesPage: React.FC = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [isPartnersModalOpen, setIsPartnersModalOpen] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -40,7 +42,12 @@ const CompaniesPage: React.FC = () => {
 
   const handleEdit = (company: Company) => {
     setSelectedCompany(company);
-    setIsModalOpen(true);
+    setIsCompanyModalOpen(true);
+  };
+
+  const handleManagePartners = (company: Company) => {
+    setSelectedCompany(company);
+    setIsPartnersModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -54,14 +61,19 @@ const CompaniesPage: React.FC = () => {
     }
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleCloseCompanyModal = () => {
+    setIsCompanyModalOpen(false);
+    setSelectedCompany(null);
+  };
+
+  const handleClosePartnersModal = () => {
+    setIsPartnersModalOpen(false);
     setSelectedCompany(null);
   };
 
   const handleSave = async () => {
     await loadCompanies();
-    handleCloseModal();
+    handleCloseCompanyModal();
   };
 
   return (
@@ -78,7 +90,7 @@ const CompaniesPage: React.FC = () => {
           <CompanyFilter onSearch={handleSearch} />
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => setIsCompanyModalOpen(true)}
           className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Plus size={20} className="mr-2" />
@@ -95,15 +107,24 @@ const CompaniesPage: React.FC = () => {
           companies={filteredCompanies}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onManagePartners={handleManagePartners}
         />
       )}
 
       <CompanyModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        isOpen={isCompanyModalOpen}
+        onClose={handleCloseCompanyModal}
         onSave={handleSave}
         company={selectedCompany}
       />
+
+      {selectedCompany && (
+        <PartnersModal
+          isOpen={isPartnersModalOpen}
+          onClose={handleClosePartnersModal}
+          company={selectedCompany}
+        />
+      )}
     </div>
   );
 };

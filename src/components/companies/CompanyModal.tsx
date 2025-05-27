@@ -1,11 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { X } from 'lucide-react';
 import { Company, CreateCompanyDTO } from '../../types/company';
-import { Partner } from '../../types/partner';
 import { companyService } from '../../services/companyService';
-import { partnerService } from '../../services/partnerService';
-import PartnerList from './PartnerList';
-import PartnerForm from './PartnerForm';
 
 interface CompanyModalProps {
   isOpen: boolean;
@@ -16,30 +12,12 @@ interface CompanyModalProps {
 
 const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSave, company }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [partners, setPartners] = useState<Partner[]>([]);
-  const [showPartnerForm, setShowPartnerForm] = useState(false);
-  const [showPartners, setShowPartners] = useState(false);
-
-  useEffect(() => {
-    if (company) {
-      loadPartners();
-    }
-  }, [company]);
-
-  const loadPartners = async () => {
-    if (company) {
-      try {
-        const data = await partnerService.getPartnersByCompany(company.id);
-        setPartners(data);
-      } catch (error) {
-        console.error('Erro ao carregar sócios:', error);
-      }
-    }
-  };
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
     try {
       const formData = new FormData(e.currentTarget);
@@ -61,30 +39,9 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSave, co
       onSave();
     } catch (error) {
       console.error('Erro ao salvar empresa:', error);
+      setError('Erro ao salvar empresa. Tente novamente.');
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleAddPartner = async (partnerData: any) => {
-    try {
-      await partnerService.createPartner(partnerData);
-      await loadPartners();
-      setShowPartnerForm(false);
-    } catch (error) {
-      console.error('Erro ao adicionar sócio:', error);
-      throw error; // Propaga o erro para o formulário tratar
-    }
-  };
-
-  const handleDeletePartner = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este sócio?')) return;
-
-    try {
-      await partnerService.deletePartner(id);
-      await loadPartners();
-    } catch (error) {
-      console.error('Erro ao excluir sócio:', error);
     }
   };
 
@@ -104,6 +61,12 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSave, co
             <X size={24} />
           </button>
         </div>
+
+        {error && (
+          <div className="mx-6 mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm">
+            {error}
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -186,49 +149,6 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSave, co
             </div>
           </div>
 
-          {company && (
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={() => setShowPartners(!showPartners)}
-                className="flex items-center justify-between w-full px-4 py-2 bg-dark-700 rounded-lg text-white hover:bg-dark-600 transition-colors"
-              >
-                <span className="flex items-center">
-                  <span className="font-medium">Sócios</span>
-                  <span className="ml-2 text-sm text-gray-400">({partners.length})</span>
-                </span>
-                {showPartners ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-              </button>
-
-              {showPartners && (
-                <div className="mt-4 p-4 bg-dark-700 rounded-lg">
-                  {!showPartnerForm ? (
-                    <div className="space-y-4">
-                      <PartnerList
-                        partners={partners}
-                        onDelete={handleDeletePartner}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPartnerForm(true)}
-                        className="flex items-center px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                      >
-                        <Plus size={18} className="mr-2" />
-                        Adicionar Sócio
-                      </button>
-                    </div>
-                  ) : (
-                    <PartnerForm
-                      companyId={company.id}
-                      onSubmit={handleAddPartner}
-                      onCancel={() => setShowPartnerForm(false)}
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
           <div className="flex justify-end space-x-4 mt-6 pt-6 border-t border-dark-700">
             <button
               type="button"
@@ -252,4 +172,4 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSave, co
   );
 };
 
-export default CompanyModal
+export default CompanyModal;
