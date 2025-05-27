@@ -1,7 +1,9 @@
-import React from 'react';
-import { Search, Filter, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Plus } from 'lucide-react';
 
 const Indicators: React.FC = () => {
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'composto' | 'unico'>('all');
+
   return (
     <div>
       <div className="flex justify-between items-start mb-6">
@@ -17,7 +19,7 @@ const Indicators: React.FC = () => {
       
       <div className="bg-dark-900/95 backdrop-blur-sm rounded-xl border border-dark-800 p-6 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
+          <div className="relative md:w-1/2">
             <input
               type="text"
               placeholder="Buscar indicadores..."
@@ -25,15 +27,38 @@ const Indicators: React.FC = () => {
             />
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
-          <select className="px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-white focus:outline-none focus:border-primary-500">
-            <option value="all">Todos os Tipos</option>
-            <option value="composto">Compostos</option>
-            <option value="unico">Únicos</option>
-          </select>
-          <button className="px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-white hover:bg-dark-700 transition-colors flex items-center gap-2">
-            <Filter size={20} />
-            Filtros
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSelectedFilter('all')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                selectedFilter === 'all'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => setSelectedFilter('composto')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                selectedFilter === 'composto'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+              }`}
+            >
+              Compostos
+            </button>
+            <button
+              onClick={() => setSelectedFilter('unico')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                selectedFilter === 'unico'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+              }`}
+            >
+              Únicos
+            </button>
+          </div>
         </div>
       </div>
 
