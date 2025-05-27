@@ -26,8 +26,11 @@ export const categoryService = {
   async getCategories(): Promise<Category[]> {
     const { data, error } = await supabase
       .from('categorias')
-      .select('*')
-      .order('nome');
+      .select(`
+        *,
+        grupo:categorias_grupo(id, nome)
+      `)
+      .order('grupo_id, codigo');
 
     if (error) throw error;
     return data || [];
@@ -42,5 +45,54 @@ export const categoryService = {
 
     if (error) throw error;
     return data;
+  },
+
+  async deleteCategory(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('categorias')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async deleteGroup(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('categorias_grupo')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async getCategoryCompanies(categoryId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('categorias_empresas')
+      .select(`
+        *,
+        empresa:empresas(id, razao_social)
+      `)
+      .eq('categoria_id', categoryId);
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async linkCategoryToCompany(categoryId: string, empresaId: string): Promise<void> {
+    const { error } = await supabase
+      .from('categorias_empresas')
+      .insert({ categoria_id: categoryId, empresa_id: empresaId });
+
+    if (error) throw error;
+  },
+
+  async unlinkCategoryFromCompany(categoryId: string, empresaId: string): Promise<void> {
+    const { error } = await supabase
+      .from('categorias_empresas')
+      .delete()
+      .eq('categoria_id', categoryId)
+      .eq('empresa_id', empresaId);
+
+    if (error) throw error;
   }
 };

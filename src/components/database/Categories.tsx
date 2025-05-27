@@ -1,21 +1,106 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus } from 'lucide-react';
 import CategoryModal from './CategoryModal';
 import CategoryGroupModal from './CategoryGroupModal';
+import CategoryList from './CategoryList';
+import CategoryDetailsModal from './CategoryDetailsModal';
+import CategoryCompaniesModal from './CategoryCompaniesModal';
+import { Category } from '../../types/category';
+import { categoryService } from '../../services/categoryService';
 
 const Categories: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'receita' | 'despesa'>('all');
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isCompaniesModalOpen, setIsCompaniesModalOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
+    filterCategories();
+  }, [categories, selectedFilter, searchTerm]);
+
+  const loadCategories = async () => {
+    try {
+      setIsLoading(true);
+      const data = await categoryService.getCategories();
+      setCategories(data);
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filterCategories = () => {
+    let filtered = categories;
+
+    if (selectedFilter !== 'all') {
+      filtered = filtered.filter(category => 
+        category.tipo.toLowerCase() === (selectedFilter === 'receita' ? 'Receita' : 'Despesa').toLowerCase()
+      );
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(category =>
+        category.nome.toLowerCase().includes(term) ||
+        category.codigo.toLowerCase().includes(term) ||
+        (category.descricao && category.descricao.toLowerCase().includes(term))
+      );
+    }
+
+    setFilteredCategories(filtered);
+  };
 
   const handleSaveCategory = () => {
     setIsCategoryModalOpen(false);
-    // Aqui você pode adicionar a lógica para recarregar a lista de categorias
+    loadCategories();
   };
 
   const handleSaveGroup = () => {
     setIsGroupModalOpen(false);
-    // Aqui você pode adicionar a lógica para recarregar a lista de grupos
+    loadCategories();
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta categoria?')) return;
+
+    try {
+      await categoryService.deleteCategory(id);
+      await loadCategories();
+    } catch (error) {
+      console.error('Erro ao excluir categoria:', error);
+    }
+  };
+
+  const handleDeleteGroup = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este grupo? Todas as categorias associadas também serão excluídas.')) return;
+
+    try {
+      await categoryService.deleteGroup(id);
+      await loadCategories();
+    } catch (error) {
+      console.error('Erro ao excluir grupo:', error);
+    }
+  };
+
+  const handleViewDetails = (category: Category) => {
+    setSelectedCategory(category);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleManageCompanies = (category: Category) => {
+    setSelectedCategory(category);
+    setIsCompaniesModalOpen(true);
   };
 
   return (
@@ -49,6 +134,8 @@ const Categories: React.FC = () => {
             <input
               type="text"
               placeholder="Buscar categorias..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500"
             />
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
@@ -89,7 +176,20 @@ const Categories: React.FC = () => {
       </div>
 
       <div className="bg-dark-900/95 backdrop-blur-sm rounded-xl border border-dark-800 p-6">
-        <p className="text-gray-400">Lista de categorias será implementada aqui.</p>
+        {isLoading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-400">Carregando categorias...</p>
+          </div>
+        ) : (
+          <CategoryList
+            categories={filteredCategories}
+            onEdit={() => {}}
+            onDelete={handleDeleteCategory}
+            onDeleteGroup={handleDeleteGroup}
+            onViewDetails={handleViewDetails}
+            onManageCompanies={handleManageCompanies}
+          />
+        )}
       </div>
 
       <CategoryModal
@@ -103,6 +203,21 @@ const Categories: React.FC = () => {
         onClose={() => setIsGroupModalOpen(false)}
         onSave={handleSaveGroup}
       />
+
+      {selectedCategory && (
+        <>
+          <CategoryDetailsModal
+            isOpen={isDetailsModalOpen}
+            onClose={() => setIsDetailsModalOpen(false)}
+            category={selectedCategory}
+          />
+          <CategoryCompaniesModal
+            isOpen={isCompaniesModalOpen}
+            onClose={() => setIsCompaniesModalOpen(false)}
+            category={selectedCategory}
+          />
+        </>
+      )}
     </div>
   );
 };

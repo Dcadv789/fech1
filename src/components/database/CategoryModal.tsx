@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { categoryService } from '../../services/categoryService';
+import { categoryCodeService } from '../../services/categoryCodeService';
 import { CreateCategoryDTO, CategoryGroup } from '../../types/category';
 
 interface CategoryModalProps {
@@ -13,12 +14,15 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [groups, setGroups] = useState<CategoryGroup[]>([]);
+  const [selectedType, setSelectedType] = useState<'Receita' | 'Despesa'>('Receita');
+  const [categoryCode, setCategoryCode] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
       loadGroups();
+      generateNextCode();
     }
-  }, [isOpen]);
+  }, [isOpen, selectedType]);
 
   const loadGroups = async () => {
     try {
@@ -30,6 +34,20 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
     }
   };
 
+  const generateNextCode = async () => {
+    try {
+      const nextCode = await categoryCodeService.getNextCode(selectedType);
+      setCategoryCode(nextCode);
+    } catch (error) {
+      console.error('Erro ao gerar código:', error);
+      setError('Erro ao gerar código da categoria. Tente novamente.');
+    }
+  };
+
+  const handleTypeChange = async (tipo: 'Receita' | 'Despesa') => {
+    setSelectedType(tipo);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -38,10 +56,10 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
     try {
       const formData = new FormData(e.currentTarget);
       const categoryData: CreateCategoryDTO = {
-        codigo: formData.get('codigo') as string,
+        codigo: categoryCode,
         nome: formData.get('nome') as string,
         descricao: formData.get('descricao') as string || undefined,
-        tipo: formData.get('tipo') as 'Receita' | 'Despesa',
+        tipo: selectedType,
         grupo_id: formData.get('grupo_id') as string,
         ativo: true
       };
@@ -78,31 +96,30 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave }
         )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Código *
-              </label>
-              <input
-                type="text"
-                name="codigo"
-                required
-                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Tipo *
-              </label>
-              <select
-                name="tipo"
-                required
-                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
-              >
-                <option value="Receita">Receita</option>
-                <option value="Despesa">Despesa</option>
-              </select>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Tipo *
+            </label>
+            <select
+              value={selectedType}
+              onChange={(e) => handleTypeChange(e.target.value as 'Receita' | 'Despesa')}
+              className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
+            >
+              <option value="Receita">Receita</option>
+              <option value="Despesa">Despesa</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Código
+            </label>
+            <input
+              type="text"
+              value={categoryCode}
+              disabled
+              className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white opacity-75"
+            />
           </div>
 
           <div>
