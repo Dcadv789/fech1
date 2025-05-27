@@ -14,7 +14,7 @@ const Sidebar: React.FC = () => {
 
   return (
     <div className="w-64 h-[calc(100vh-2rem)] my-4">
-      <div className="h-full bg-dark-900 rounded-2xl shadow-lg overflow-hidden border border-dark-900">
+      <div className="h-full bg-dark-900/95 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden border border-dark-800">
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-center flex-shrink-0 h-20">
             <span className="text-primary-400 text-2xl font-bold">Dashboard</span>
