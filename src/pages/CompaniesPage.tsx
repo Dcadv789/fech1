@@ -65,7 +65,7 @@ const CompaniesPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 p-6">
+    <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-white mb-2">Empresas</h1>
         <p className="text-gray-300">
@@ -87,17 +87,15 @@ const CompaniesPage: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64 bg-dark-900/95 backdrop-blur-sm rounded-xl border border-dark-800">
           <div className="text-gray-400">Carregando...</div>
         </div>
       ) : (
-        <div className="bg-dark-900/95 backdrop-blur-sm rounded-xl shadow-md border border-dark-800">
-          <CompanyList
-            companies={filteredCompanies}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        </div>
+        <CompanyList
+          companies={filteredCompanies}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       )}
 
       <CompanyModal
