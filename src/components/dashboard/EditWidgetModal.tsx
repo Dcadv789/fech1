@@ -86,7 +86,8 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
       const widgetData = {
         nome_exibicao: formData.get('nome_exibicao'),
         tipo_visualizacao: tipoVisualizacao,
-        tipo_grafico: tipoVisualizacao === 'grafico' ? tipoGrafico : null
+        tipo_grafico: tipoVisualizacao === 'grafico' ? tipoGrafico : null,
+        modificado_em: new Date().toISOString()
       };
 
       const { error: updateError } = await supabase
