@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Upload, Filter, Calendar } from 'lucide-react';
+import { Search, Plus, Upload } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { Category } from '../../types/category';
-import { Indicator } from '../../types/indicator';
 import { Transaction } from '../../types/transaction';
 import TransactionList from './TransactionList';
 import TransactionModal from './TransactionModal';
@@ -11,13 +9,12 @@ import TransactionEditModal from './TransactionEditModal';
 const CustomerTransactions: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
-  const [selectedType, setSelectedType] = useState<'all' | 'receita' | 'despesa'>('all');
+  const [selectedClient, setSelectedClient] = useState<string>('');
   const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [indicators, setIndicators] = useState<Indicator[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedIndicator, setSelectedIndicator] = useState<string>('');
+  const [clients, setClients] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -27,20 +24,22 @@ const CustomerTransactions: React.FC = () => {
     loadInitialData();
   }, []);
 
+  useEffect(() => {
+    filterTransactions();
+  }, [transactions, selectedMonth, selectedYear, selectedClient, searchTerm]);
+
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-      const [transactionsData, yearsData, categoriesData, indicatorsData] = await Promise.all([
+      const [transactionsData, yearsData, clientsData] = await Promise.all([
         loadTransactions(),
         loadAvailableYears(),
-        loadCategories(),
-        loadIndicators()
+        loadClients()
       ]);
 
       setTransactions(transactionsData || []);
       setAvailableYears(yearsData);
-      setCategories(categoriesData || []);
-      setIndicators(indicatorsData || []);
+      setClients(clientsData || []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -54,9 +53,10 @@ const CustomerTransactions: React.FC = () => {
       .select(`
         *,
         empresa:empresas(razao_social),
-        categoria:categorias(nome),
-        indicador:indicadores(nome)
+        cliente:clientes(razao_social)
       `)
+      .eq('tipo', 'Receita')
+      .not('cliente_id', 'is', null)
       .order('ano', { ascending: false })
       .order('mes', { ascending: false });
 
@@ -68,6 +68,8 @@ const CustomerTransactions: React.FC = () => {
     const { data, error } = await supabase
       .from('lancamentos')
       .select('ano')
+      .eq('tipo', 'Receita')
+      .not('cliente_id', 'is', null)
       .order('ano', { ascending: false });
 
     if (error) throw error;
@@ -75,26 +77,42 @@ const CustomerTransactions: React.FC = () => {
     return years.length > 0 ? years : [new Date().getFullYear()];
   };
 
-  const loadCategories = async () => {
+  const loadClients = async () => {
     const { data, error } = await supabase
-      .from('categorias')
+      .from('clientes')
       .select('*')
       .eq('ativo', true)
-      .order('nome');
+      .order('razao_social');
 
     if (error) throw error;
     return data;
   };
 
-  const loadIndicators = async () => {
-    const { data, error } = await supabase
-      .from('indicadores')
-      .select('*')
-      .eq('ativo', true)
-      .order('nome');
+  const filterTransactions = () => {
+    let filtered = [...transactions];
 
-    if (error) throw error;
-    return data;
+    if (selectedMonth !== 'all') {
+      filtered = filtered.filter(transaction => transaction.mes === selectedMonth);
+    }
+
+    if (selectedYear !== 'all') {
+      filtered = filtered.filter(transaction => transaction.ano === selectedYear);
+    }
+
+    if (selectedClient) {
+      filtered = filtered.filter(transaction => transaction.cliente_id === selectedClient);
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(transaction =>
+        transaction.descricao?.toLowerCase().includes(term) ||
+        (transaction as any).cliente?.razao_social?.toLowerCase().includes(term) ||
+        (transaction as any).empresa?.razao_social?.toLowerCase().includes(term)
+      );
+    }
+
+    setFilteredTransactions(filtered);
   };
 
   const handleEdit = (transaction: Transaction) => {
@@ -185,6 +203,8 @@ const CustomerTransactions: React.FC = () => {
             <input
               type="text"
               placeholder="Buscar lançamentos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500"
             />
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
@@ -206,52 +226,11 @@ const CustomerTransactions: React.FC = () => {
             className="px-4 py-2"
           />
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => setSelectedType('all')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedType === 'all'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-              }`}
-            >
-              Todos
-            </button>
-            <button
-              onClick={() => setSelectedType('receita')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedType === 'receita'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-              }`}
-            >
-              Receitas
-            </button>
-            <button
-              onClick={() => setSelectedType('despesa')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedType === 'despesa'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-              }`}
-            >
-              Despesas
-            </button>
-          </div>
-
           <SelectButton
-            value={selectedCategory}
-            onChange={setSelectedCategory}
-            options={categories.map(category => ({ value: category.id, label: category.nome }))}
-            placeholder="Todas as Categorias"
-            className="px-4 py-2 min-w-[200px]"
-          />
-
-          <SelectButton
-            value={selectedIndicator}
-            onChange={setSelectedIndicator}
-            options={indicators.map(indicator => ({ value: indicator.id, label: indicator.nome }))}
-            placeholder="Todos os Indicadores"
+            value={selectedClient}
+            onChange={setSelectedClient}
+            options={clients.map(client => ({ value: client.id, label: client.razao_social }))}
+            placeholder="Todos os Clientes"
             className="px-4 py-2 min-w-[200px]"
           />
         </div>
@@ -264,7 +243,7 @@ const CustomerTransactions: React.FC = () => {
           </div>
         ) : (
           <TransactionList
-            transactions={transactions}
+            transactions={filteredTransactions}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />

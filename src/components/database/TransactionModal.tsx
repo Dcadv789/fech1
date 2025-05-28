@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { transactionService } from '../../services/transactionService';
-import { Category } from '../../types/category';
-import { Indicator } from '../../types/indicator';
 import { CreateTransactionDTO } from '../../types/transaction';
 
 interface Company {
   id: string;
+  razao_social: string;
+}
+
+interface Client {
+  id: string;
+  codigo: string;
   razao_social: string;
 }
 
@@ -19,37 +23,40 @@ interface TransactionModalProps {
 
 const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, onSave }) => {
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [indicators, setIndicators] = useState<Indicator[]>([]);
-  const [selectedType, setSelectedType] = useState<'Receita' | 'Despesa'>('Receita');
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       loadData();
+    } else {
+      setSelectedClient(null);
     }
   }, [isOpen]);
 
   const loadData = async () => {
     try {
-      const [companiesData, categoriesData, indicatorsData] = await Promise.all([
+      const [companiesData, clientsData] = await Promise.all([
         supabase.from('empresas').select('id, razao_social').order('razao_social'),
-        supabase.from('categorias').select('*').eq('ativo', true).order('nome'),
-        supabase.from('indicadores').select('*').eq('ativo', true).order('nome')
+        supabase.from('clientes').select('id, codigo, razao_social').eq('ativo', true).order('razao_social')
       ]);
 
       if (companiesData.error) throw companiesData.error;
-      if (categoriesData.error) throw categoriesData.error;
-      if (indicatorsData.error) throw indicatorsData.error;
+      if (clientsData.error) throw clientsData.error;
 
       setCompanies(companiesData.data || []);
-      setCategories(categoriesData.data || []);
-      setIndicators(indicatorsData.data || []);
+      setClients(clientsData.data || []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       setError('Erro ao carregar dados. Tente novamente.');
     }
+  };
+
+  const handleClientChange = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    setSelectedClient(client || null);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -63,9 +70,6 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
       const mes = Number(formData.get('mes'));
       const ano = Number(formData.get('ano'));
       const valor = Number(formData.get('valor'));
-      const tipo = formData.get('tipo') as 'Receita' | 'Despesa';
-      const categoriaId = formData.get('categoria_id') as string;
-      const indicadorId = formData.get('indicador_id') as string;
       const descricao = formData.get('descricao') as string;
 
       // Validações
@@ -85,23 +89,18 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
         throw new Error('Valor inválido');
       }
 
-      if (categoriaId && indicadorId) {
-        throw new Error('Selecione apenas categoria OU indicador');
-      }
-
-      if (!categoriaId && !indicadorId) {
-        throw new Error('Selecione uma categoria ou indicador');
+      if (!selectedClient) {
+        throw new Error('Selecione um cliente');
       }
 
       const transactionData: CreateTransactionDTO = {
         empresa_id: empresaId,
+        cliente_id: selectedClient.id,
         mes,
         ano,
         valor,
-        tipo,
-        descricao,
-        categoria_id: categoriaId || undefined,
-        indicador_id: indicadorId || undefined
+        tipo: 'Receita', // Sempre será receita
+        descricao
       };
 
       await transactionService.createTransaction(transactionData);
@@ -188,71 +187,48 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Valor *
-              </label>
-              <input
-                type="number"
-                name="valor"
-                min="0.01"
-                step="0.01"
-                required
-                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Tipo *
-              </label>
-              <select
-                name="tipo"
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value as 'Receita' | 'Despesa')}
-                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
-              >
-                <option value="Receita">Receita</option>
-                <option value="Despesa">Despesa</option>
-              </select>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Valor *
+            </label>
+            <input
+              type="number"
+              name="valor"
+              min="0.01"
+              step="0.01"
+              required
+              className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Categoria
+                Cliente *
               </label>
               <select
-                name="categoria_id"
+                onChange={(e) => handleClientChange(e.target.value)}
+                required
                 className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
               >
-                <option value="">Selecione uma categoria</option>
-                {categories
-                  .filter(cat => cat.tipo === selectedType)
-                  .map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.nome}
-                    </option>
-                  ))
-                }
+                <option value="">Selecione um cliente</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.razao_social}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Indicador
+                Código do Cliente
               </label>
-              <select
-                name="indicador_id"
-                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
-              >
-                <option value="">Selecione um indicador</option>
-                {indicators.map((indicator) => (
-                  <option key={indicator.id} value={indicator.id}>
-                    {indicator.nome}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                value={selectedClient?.codigo || ''}
+                readOnly
+                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-gray-400"
+              />
             </div>
           </div>
 
