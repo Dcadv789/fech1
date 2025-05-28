@@ -1,106 +1,231 @@
-import React from 'react';
-import { Search, Filter, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Plus } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { Client } from '../types/client';
+import { clientService } from '../services/clientService';
+import ClientList from '../components/clients/ClientList';
+import ClientModal from '../components/clients/ClientModal';
+
+interface Company {
+  id: string;
+  razao_social: string;
+}
 
 const ClientsPage: React.FC = () => {
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    filterClients();
+  }, [clients, selectedCompanyId, searchTerm, activeFilter]);
+
+  const loadInitialData = async () => {
+    try {
+      setIsLoading(true);
+      const [companiesData, clientsData] = await Promise.all([
+        loadCompanies(),
+        loadClients()
+      ]);
+
+      setCompanies(companiesData || []);
+      setClients(clientsData || []);
+
+      // TODO: Quando tivermos autenticação, pegar a empresa do usuário logado
+      if (companiesData.length > 0) {
+        setSelectedCompanyId(companiesData[0].id);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadCompanies = async () => {
+    const { data, error } = await supabase
+      .from('empresas')
+      .select('id, razao_social')
+      .order('razao_social');
+
+    if (error) throw error;
+    return data;
+  };
+
+  const loadClients = async () => {
+    const data = await clientService.getClients();
+    return data;
+  };
+
+  const filterClients = () => {
+    let filtered = clients;
+
+    if (selectedCompanyId) {
+      filtered = filtered.filter(client => client.empresa_id === selectedCompanyId);
+    }
+
+    if (activeFilter !== 'all') {
+      filtered = filtered.filter(client => 
+        activeFilter === 'active' ? client.ativo : !client.ativo
+      );
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(client =>
+        client.razao_social.toLowerCase().includes(term) ||
+        (client.nome_fantasia && client.nome_fantasia.toLowerCase().includes(term)) ||
+        client.cnpj.includes(term) ||
+        client.codigo.toLowerCase().includes(term)
+      );
+    }
+
+    setFilteredClients(filtered);
+  };
+
+  const handleEdit = (client: Client) => {
+    setSelectedClient(client);
+    setIsModalOpen(true);
+  };
+
+  const handleToggleActive = async (client: Client) => {
+    try {
+      await clientService.toggleClientActive(client.id, !client.ativo);
+      await loadClients();
+    } catch (error) {
+      console.error('Erro ao alterar status do cliente:', error);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
+
+    try {
+      await clientService.deleteClient(id);
+      await loadClients();
+    } catch (error) {
+      console.error('Erro ao excluir cliente:', error);
+    }
+  };
+
+  const handleSave = async () => {
+    await loadClients();
+    setIsModalOpen(false);
+    setSelectedClient(null);
+  };
+
   return (
-    <div className="p-6 bg-dark-800 rounded-xl shadow-md">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white mb-2 md:mb-0">Clientes</h1>
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-          <div className="relative">
+    <div className="p-6">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h2 className="text-xl font-semibold text-white mb-2">Clientes</h2>
+          <p className="text-gray-400">Gerencie os clientes cadastrados no sistema.</p>
+        </div>
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+        >
+          <Plus size={20} />
+          Novo Cliente
+        </button>
+      </div>
+
+      <div className="bg-dark-900/95 backdrop-blur-sm rounded-xl border border-dark-800 p-6 mb-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative md:w-1/2">
             <input
               type="text"
-              placeholder="Buscar cliente..."
-              className="pl-10 pr-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white w-full sm:w-64"
+              placeholder="Buscar clientes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500"
             />
-            <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
+            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
-          <button className="flex items-center justify-center px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white hover:bg-dark-600 transition-colors">
-            <Filter size={18} className="mr-2" />
-            Filtros
-            <ChevronDown size={16} className="ml-2" />
-          </button>
-        </div>
-      </div>
-      <div className="bg-dark-700 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-dark-600">
-            <thead className="bg-dark-800">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Nome
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Email
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Telefone
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-dark-800 divide-y divide-dark-700">
-              {[1, 2, 3, 4, 5].map((item) => (
-                <tr key={item} className="hover:bg-dark-750">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-white">Cliente {item}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">cliente{item}@exemplo.com</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">(11) 9999-8888</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      Ativo
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right space-x-2">
-                    <button className="text-primary-400 hover:text-primary-300">Detalhes</button>
-                    <button className="text-primary-400 hover:text-primary-300">Editar</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="bg-dark-800 px-4 py-3 flex items-center justify-between border-t border-dark-700">
-          <div className="flex-1 flex justify-between sm:hidden">
-            <button className="relative inline-flex items-center px-4 py-2 border border-dark-600 text-sm font-medium rounded-md text-white bg-dark-700 hover:bg-dark-600">
-              Anterior
+
+          <select
+            value={selectedCompanyId}
+            onChange={(e) => setSelectedCompanyId(e.target.value)}
+            className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
+          >
+            <option value="">Todas as empresas</option>
+            {companies.map((company) => (
+              <option key={company.id} value={company.id}>
+                {company.razao_social}
+              </option>
+            ))}
+          </select>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveFilter('all')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activeFilter === 'all'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+              }`}
+            >
+              Todos
             </button>
-            <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-dark-600 text-sm font-medium rounded-md text-white bg-dark-700 hover:bg-dark-600">
-              Próximo
+            <button
+              onClick={() => setActiveFilter('active')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activeFilter === 'active'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+              }`}
+            >
+              Ativos
             </button>
-          </div>
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-400">
-                Mostrando <span className="font-medium">1</span> até <span className="font-medium">5</span> de <span className="font-medium">20</span> resultados
-              </p>
-            </div>
-            <div>
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                <button className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-dark-600 bg-dark-700 text-sm font-medium text-gray-300 hover:bg-dark-600">
-                  Anterior
-                </button>
-                <button className="relative inline-flex items-center px-4 py-2 border border-dark-600 bg-dark-700 text-sm font-medium text-white hover:bg-dark-600">
-                  1
-                </button>
-                <button className="relative inline-flex items-center px-4 py-2 border border-dark-600 bg-primary-600 text-sm font-medium text-white">
-                  2
-                </button>
-                <button className="relative inline-flex items-center px-4 py-2 border border-dark-600 bg-dark-700 text-sm font-medium text-white hover:bg-dark-600">
-                  3
-                </button>
-                <button className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-dark-600 bg-dark-700 text-sm font-medium text-gray-300 hover:bg-dark-600">
-                  Próximo
-                </button>
-              </nav>
-            </div>
+            <button
+              onClick={() => setActiveFilter('inactive')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activeFilter === 'inactive'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+              }`}
+            >
+              Inativos
+            </button>
           </div>
         </div>
       </div>
+
+      <div className="bg-dark-900/95 backdrop-blur-sm rounded-xl border border-dark-800 p-6">
+        {isLoading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-400">Carregando clientes...</p>
+          </div>
+        ) : (
+          <ClientList 
+            clients={filteredClients}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onToggleActive={handleToggleActive}
+          />
+        )}
+      </div>
+
+      <ClientModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedClient(null);
+        }}
+        onSave={handleSave}
+        selectedCompanyId={selectedCompanyId}
+        client={selectedClient}
+      />
     </div>
   );
 };
