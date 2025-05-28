@@ -7,7 +7,6 @@ interface Widget {
   nome_exibicao: string;
   tipo_visualizacao: 'card' | 'lista' | 'grafico';
   tipo_grafico?: 'bar' | 'line' | 'pie';
-  tabela_origem: string;
   ativo: boolean;
 }
 
@@ -24,19 +23,6 @@ const WidgetList: React.FC<WidgetListProps> = ({
   onDelete,
   onToggleActive
 }) => {
-  const getOrigemDisplay = (origem: string) => {
-    switch (origem) {
-      case 'indicador':
-        return 'Indicador';
-      case 'categoria':
-        return 'Categoria';
-      case 'registro_venda':
-        return 'Vendas';
-      default:
-        return origem;
-    }
-  };
-
   if (widgets.length === 0) {
     return (
       <div className="text-center py-8 bg-dark-800/50 rounded-lg border border-dark-700">
@@ -53,10 +39,10 @@ const WidgetList: React.FC<WidgetListProps> = ({
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Ordem</th>
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Nome</th>
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Tipo</th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Origem</th>
             {widgets.some(w => w.tipo_visualizacao === 'grafico') && (
               <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Tipo Gráfico</th>
             )}
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Status</th>
             <th className="px-4 py-2 text-right text-sm font-medium text-gray-400">Ações</th>
           </tr>
         </thead>
@@ -76,11 +62,6 @@ const WidgetList: React.FC<WidgetListProps> = ({
                   {widget.tipo_visualizacao.charAt(0).toUpperCase() + widget.tipo_visualizacao.slice(1)}
                 </span>
               </td>
-              <td className="px-4 py-2">
-                <span className="px-2 py-1 text-xs rounded-full bg-gray-500/10 text-gray-300">
-                  {getOrigemDisplay(widget.tabela_origem)}
-                </span>
-              </td>
               {widgets.some(w => w.tipo_visualizacao === 'grafico') && (
                 <td className="px-4 py-2">
                   {widget.tipo_visualizacao === 'grafico' && (
@@ -90,6 +71,15 @@ const WidgetList: React.FC<WidgetListProps> = ({
                   )}
                 </td>
               )}
+              <td className="px-4 py-2">
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  widget.ativo
+                    ? 'bg-green-500/10 text-green-500'
+                    : 'bg-red-500/10 text-red-500'
+                }`}>
+                  {widget.ativo ? 'Ativo' : 'Inativo'}
+                </span>
+              </td>
               <td className="px-4 py-2">
                 <div className="flex justify-end gap-2">
                   <button

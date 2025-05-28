@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import AddWidgetModal from '../components/dashboard/AddWidgetModal';
 import EditWidgetModal from '../components/dashboard/EditWidgetModal';
@@ -12,6 +12,7 @@ const DashboardConfigPage: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('home');
   const [selectedType, setSelectedType] = useState<'all' | 'card' | 'lista' | 'grafico'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [selectedSource, setSelectedSource] = useState<'all' | 'indicador' | 'categoria' | 'registro_vendas'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
@@ -28,7 +29,7 @@ const DashboardConfigPage: React.FC = () => {
 
   useEffect(() => {
     filterWidgets();
-  }, [widgets, selectedType, selectedStatus, searchTerm]);
+  }, [widgets, selectedType, selectedStatus, selectedSource, searchTerm]);
 
   const loadWidgets = async () => {
     try {
@@ -53,6 +54,10 @@ const DashboardConfigPage: React.FC = () => {
       filtered = filtered.filter(widget => 
         selectedStatus === 'active' ? widget.ativo : !widget.ativo
       );
+    }
+
+    if (selectedSource !== 'all') {
+      filtered = filtered.filter(widget => widget.tabela_origem === selectedSource);
     }
 
     if (searchTerm) {
@@ -99,6 +104,30 @@ const DashboardConfigPage: React.FC = () => {
     setIsEditModalOpen(false);
     setSelectedWidget(null);
     await loadWidgets();
+  };
+
+  const handleSourceChange = (direction: 'next' | 'prev') => {
+    const sources = ['all', 'indicador', 'categoria', 'registro_vendas'];
+    const currentIndex = sources.indexOf(selectedSource);
+    let newIndex;
+
+    if (direction === 'next') {
+      newIndex = currentIndex === sources.length - 1 ? 0 : currentIndex + 1;
+    } else {
+      newIndex = currentIndex === 0 ? sources.length - 1 : currentIndex - 1;
+    }
+
+    setSelectedSource(sources[newIndex] as any);
+  };
+
+  const getSourceDisplayName = (source: string) => {
+    switch (source) {
+      case 'all': return 'Todas as Fontes';
+      case 'indicador': return 'Indicadores';
+      case 'categoria': return 'Categorias';
+      case 'registro_vendas': return 'Registro de Vendas';
+      default: return source;
+    }
   };
 
   return (
@@ -162,80 +191,100 @@ const DashboardConfigPage: React.FC = () => {
                     <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
                   </div>
 
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setSelectedType('all')}
-                      className={`px-4 py-2 rounded-lg transition-colors ${
-                        selectedType === 'all'
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                      }`}
-                    >
-                      Todos
-                    </button>
-                    <button
-                      onClick={() => setSelectedType('card')}
-                      className={`px-4 py-2 rounded-lg transition-colors ${
-                        selectedType === 'card'
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                      }`}
-                    >
-                      Cards
-                    </button>
-                    <button
-                      onClick={() => setSelectedType('grafico')}
-                      className={`px-4 py-2 rounded-lg transition-colors ${
-                        selectedType === 'grafico'
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                      }`}
-                    >
-                      Gráficos
-                    </button>
-                    <button
-                      onClick={() => setSelectedType('lista')}
-                      className={`px-4 py-2 rounded-lg transition-colors ${
-                        selectedType === 'lista'
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                      }`}
-                    >
-                      Listas
-                    </button>
-                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 bg-dark-800 rounded-lg px-2">
+                      <button
+                        onClick={() => handleSourceChange('prev')}
+                        className="p-2 text-gray-400 hover:text-white transition-colors"
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+                      <span className="text-white px-2">
+                        {getSourceDisplayName(selectedSource)}
+                      </span>
+                      <button
+                        onClick={() => handleSourceChange('next')}
+                        className="p-2 text-gray-400 hover:text-white transition-colors"
+                      >
+                        <ChevronRight size={20} />
+                      </button>
+                    </div>
 
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setSelectedStatus('all')}
-                      className={`px-4 py-2 rounded-lg transition-colors ${
-                        selectedStatus === 'all'
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                      }`}
-                    >
-                      Todos
-                    </button>
-                    <button
-                      onClick={() => setSelectedStatus('active')}
-                      className={`px-4 py-2 rounded-lg transition-colors ${
-                        selectedStatus === 'active'
-                          ? 'bg-green-600 text-white'
-                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                      }`}
-                    >
-                      Ativos
-                    </button>
-                    <button
-                      onClick={() => setSelectedStatus('inactive')}
-                      className={`px-4 py-2 rounded-lg transition-colors ${
-                        selectedStatus === 'inactive'
-                          ? 'bg-red-600 text-white'
-                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                      }`}
-                    >
-                      Inativos
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSelectedType('all')}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          selectedType === 'all'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                        }`}
+                      >
+                        Todos
+                      </button>
+                      <button
+                        onClick={() => setSelectedType('card')}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          selectedType === 'card'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                        }`}
+                      >
+                        Cards
+                      </button>
+                      <button
+                        onClick={() => setSelectedType('grafico')}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          selectedType === 'grafico'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                        }`}
+                      >
+                        Gráficos
+                      </button>
+                      <button
+                        onClick={() => setSelectedType('lista')}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          selectedType === 'lista'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                        }`}
+                      >
+                        Listas
+                      </button>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSelectedStatus('all')}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          selectedStatus === 'all'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                        }`}
+                      >
+                        Todos
+                      </button>
+                      <button
+                        onClick={() => setSelectedStatus('active')}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          selectedStatus === 'active'
+                            ? 'bg-green-600 text-white'
+                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                        }`}
+                      >
+                        Ativos
+                      </button>
+                      <button
+                        onClick={() => setSelectedStatus('inactive')}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          selectedStatus === 'inactive'
+                            ? 'bg-red-600 text-white'
+                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                        }`}
+                      >
+                        Inativos
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
