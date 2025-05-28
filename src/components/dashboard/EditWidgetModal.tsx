@@ -3,6 +3,8 @@ import { X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Category } from '../../types/category';
 import { Indicator } from '../../types/indicator';
+import { categoryService } from '../../services/categoryService';
+import { indicatorService } from '../../services/indicatorService';
 
 interface EditWidgetModalProps {
   isOpen: boolean;
@@ -36,15 +38,12 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
   const loadData = async () => {
     try {
       const [categoriesData, indicatorsData] = await Promise.all([
-        supabase.from('categorias').select('*').eq('ativo', true),
-        supabase.from('indicadores').select('*').eq('ativo', true)
+        categoryService.getCategories(),
+        indicatorService.getIndicators()
       ]);
 
-      if (categoriesData.error) throw categoriesData.error;
-      if (indicatorsData.error) throw indicatorsData.error;
-
-      setCategories(categoriesData.data || []);
-      setIndicators(indicatorsData.data || []);
+      setCategories(categoriesData);
+      setIndicators(indicatorsData);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       setError('Erro ao carregar dados. Tente novamente.');
@@ -88,6 +87,7 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
         nome_exibicao: formData.get('nome_exibicao'),
         tipo_visualizacao: tipoVisualizacao,
         tipo_grafico: tipoVisualizacao === 'grafico' ? tipoGrafico : null,
+        atualizado_em: new Date().toISOString()
       };
 
       const { error: updateError } = await supabase
