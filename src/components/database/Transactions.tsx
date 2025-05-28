@@ -1,8 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, Plus, Upload } from 'lucide-react';
+import { Search, Plus, Upload } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Category } from '../../types/category';
 import { Indicator } from '../../types/indicator';
+import TransactionList from './TransactionList';
+import TransactionModal from './TransactionModal';
+
+interface Transaction {
+  id: string;
+  mes: number;
+  ano: number;
+  tipo: 'Receita' | 'Despesa';
+  valor: number;
+  descricao: string;
+  empresa: {
+    razao_social: string;
+  };
+}
 
 const Transactions: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
@@ -13,63 +27,106 @@ const Transactions: React.FC = () => {
   const [indicators, setIndicators] = useState<Indicator[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedIndicator, setSelectedIndicator] = useState<string>('');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    // Definir mês anterior e ano atual como padrão
-    const currentDate = new Date();
-    const previousMonth = currentDate.getMonth() === 0 ? 11 : currentDate.getMonth() - 1;
-    setSelectedMonth(previousMonth);
-    setSelectedYear(currentDate.getFullYear());
-
-    loadAvailableYears();
-    loadCategories();
-    loadIndicators();
+    loadInitialData();
   }, []);
 
-  const loadAvailableYears = async () => {
+  const loadInitialData = async () => {
     try {
-      const { data, error } = await supabase
-        .from('lancamentos')
-        .select('ano')
-        .order('ano', { ascending: false });
+      setIsLoading(true);
+      const [transactionsData, yearsData, categoriesData, indicatorsData] = await Promise.all([
+        loadTransactions(),
+        loadAvailableYears(),
+        loadCategories(),
+        loadIndicators()
+      ]);
 
-      if (error) throw error;
-
-      const years = [...new Set(data?.map(item => item.ano))];
-      setAvailableYears(years.length > 0 ? years : [new Date().getFullYear()]);
+      setTransactions(transactionsData || []);
+      setAvailableYears(yearsData);
+      setCategories(categoriesData || []);
+      setIndicators(indicatorsData || []);
     } catch (error) {
-      console.error('Erro ao carregar anos:', error);
+      console.error('Erro ao carregar dados:', error);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const loadTransactions = async () => {
+    const { data, error } = await supabase
+      .from('lancamentos')
+      .select(`
+        *,
+        empresa:empresas(razao_social)
+      `)
+      .order('ano', { ascending: false })
+      .order('mes', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  };
+
+  const loadAvailableYears = async () => {
+    const { data, error } = await supabase
+      .from('lancamentos')
+      .select('ano')
+      .order('ano', { ascending: false });
+
+    if (error) throw error;
+    const years = [...new Set(data?.map(item => item.ano))];
+    return years.length > 0 ? years : [new Date().getFullYear()];
   };
 
   const loadCategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('categorias')
-        .select('*')
-        .eq('ativo', true)
-        .order('nome');
+    const { data, error } = await supabase
+      .from('categorias')
+      .select('*')
+      .eq('ativo', true)
+      .order('nome');
 
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar categorias:', error);
-    }
+    if (error) throw error;
+    return data;
   };
 
   const loadIndicators = async () => {
+    const { data, error } = await supabase
+      .from('indicadores')
+      .select('*')
+      .eq('ativo', true)
+      .order('nome');
+
+    if (error) throw error;
+    return data;
+  };
+
+  const handleEdit = (transaction: Transaction) => {
+    // Implementar edição
+    console.log('Editar lançamento:', transaction);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este lançamento?')) return;
+
     try {
-      const { data, error } = await supabase
-        .from('indicadores')
-        .select('*')
-        .eq('ativo', true)
-        .order('nome');
+      const { error } = await supabase
+        .from('lancamentos')
+        .delete()
+        .eq('id', id);
 
       if (error) throw error;
-      setIndicators(data || []);
+      await loadTransactions();
     } catch (error) {
-      console.error('Erro ao carregar indicadores:', error);
+      console.error('Erro ao excluir lançamento:', error);
     }
+  };
+
+  const handleSaveTransaction = async () => {
+    await loadTransactions();
+    setIsModalOpen(false);
   };
 
   const months = [
@@ -97,7 +154,6 @@ const Transactions: React.FC = () => {
           </option>
         ))}
       </select>
-      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
     </div>
   );
 
@@ -109,7 +165,10 @@ const Transactions: React.FC = () => {
           <p className="text-gray-400">Gerencie os lançamentos financeiros e acompanhe o fluxo de caixa.</p>
         </div>
         <div className="flex gap-3">
-          <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+          >
             <Plus size={20} />
             Novo Lançamento
           </button>
@@ -134,7 +193,7 @@ const Transactions: React.FC = () => {
           <SelectButton
             value={selectedMonth}
             onChange={(value) => setSelectedMonth(value === 'all' ? 'all' : Number(value))}
-            options={months.map((month, index) => ({ value: index, label: month }))}
+            options={months.map((month, index) => ({ value: index + 1, label: month }))}
             placeholder="Todos os Meses"
             className="px-4 py-2"
           />
@@ -199,8 +258,24 @@ const Transactions: React.FC = () => {
       </div>
 
       <div className="bg-dark-900/95 backdrop-blur-sm rounded-xl border border-dark-800 p-6">
-        <p className="text-gray-400">Lista de lançamentos será implementada aqui.</p>
+        {isLoading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-400">Carregando lançamentos...</p>
+          </div>
+        ) : (
+          <TransactionList
+            transactions={transactions}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
       </div>
+
+      <TransactionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveTransaction}
+      />
     </div>
   );
 };
