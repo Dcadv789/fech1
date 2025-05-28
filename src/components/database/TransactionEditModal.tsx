@@ -4,24 +4,25 @@ import { supabase } from '../../lib/supabase';
 import { transactionService } from '../../services/transactionService';
 import { Category } from '../../types/category';
 import { Indicator } from '../../types/indicator';
-import { CreateTransactionDTO } from '../../types/transaction';
+import { Transaction } from '../../types/transaction';
 
-interface Company {
-  id: string;
-  razao_social: string;
-}
-
-interface TransactionModalProps {
+interface TransactionEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
+  transaction: Transaction;
 }
 
-const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, onSave }) => {
-  const [companies, setCompanies] = useState<Company[]>([]);
+const TransactionEditModal: React.FC<TransactionEditModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  transaction 
+}) => {
+  const [companies, setCompanies] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [indicators, setIndicators] = useState<Indicator[]>([]);
-  const [selectedType, setSelectedType] = useState<'Receita' | 'Despesa'>('Receita');
+  const [selectedType, setSelectedType] = useState<'Receita' | 'Despesa'>(transaction.tipo);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,31 +70,14 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
       const descricao = formData.get('descricao') as string;
 
       // Validações
-      if (!empresaId) {
-        throw new Error('Selecione uma empresa');
-      }
+      if (!empresaId) throw new Error('Selecione uma empresa');
+      if (!mes || mes < 1 || mes > 12) throw new Error('Mês inválido');
+      if (!ano || ano < 2000) throw new Error('Ano inválido');
+      if (!valor || valor <= 0) throw new Error('Valor inválido');
+      if (categoriaId && indicadorId) throw new Error('Selecione apenas categoria OU indicador');
+      if (!categoriaId && !indicadorId) throw new Error('Selecione uma categoria ou indicador');
 
-      if (!mes || mes < 1 || mes > 12) {
-        throw new Error('Mês inválido');
-      }
-
-      if (!ano || ano < 2000) {
-        throw new Error('Ano inválido');
-      }
-
-      if (!valor || valor <= 0) {
-        throw new Error('Valor inválido');
-      }
-
-      if (categoriaId && indicadorId) {
-        throw new Error('Selecione apenas categoria OU indicador');
-      }
-
-      if (!categoriaId && !indicadorId) {
-        throw new Error('Selecione uma categoria ou indicador');
-      }
-
-      const transactionData: CreateTransactionDTO = {
+      await transactionService.updateTransaction(transaction.id, {
         empresa_id: empresaId,
         mes,
         ano,
@@ -102,13 +86,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
         descricao,
         categoria_id: categoriaId || undefined,
         indicador_id: indicadorId || undefined
-      };
+      });
 
-      await transactionService.createTransaction(transactionData);
       onSave();
     } catch (error) {
-      console.error('Erro ao salvar lançamento:', error);
-      setError(error instanceof Error ? error.message : 'Erro ao salvar lançamento');
+      console.error('Erro ao atualizar lançamento:', error);
+      setError(error instanceof Error ? error.message : 'Erro ao atualizar lançamento');
     } finally {
       setIsSubmitting(false);
     }
@@ -120,7 +103,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-dark-800 rounded-xl w-full max-w-2xl">
         <div className="flex items-center justify-between p-6 border-b border-dark-700">
-          <h2 className="text-xl font-bold text-white">Novo Lançamento</h2>
+          <h2 className="text-xl font-bold text-white">Editar Lançamento</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -142,10 +125,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
             </label>
             <select
               name="empresa_id"
+              defaultValue={transaction.empresa_id}
               required
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             >
-              <option value="">Selecione uma empresa</option>
               {companies.map((company) => (
                 <option key={company.id} value={company.id}>
                   {company.razao_social}
@@ -161,6 +144,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
               </label>
               <select
                 name="mes"
+                defaultValue={transaction.mes}
                 required
                 className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
               >
@@ -179,10 +163,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
               <input
                 type="number"
                 name="ano"
+                defaultValue={transaction.ano}
                 min="2000"
                 max="2100"
                 required
-                defaultValue={new Date().getFullYear()}
                 className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
               />
             </div>
@@ -196,6 +180,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
               <input
                 type="number"
                 name="valor"
+                defaultValue={transaction.valor}
                 min="0.01"
                 step="0.01"
                 required
@@ -225,6 +210,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
               </label>
               <select
                 name="categoria_id"
+                defaultValue={transaction.categoria_id || ''}
                 className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
               >
                 <option value="">Selecione uma categoria</option>
@@ -244,6 +230,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
               </label>
               <select
                 name="indicador_id"
+                defaultValue={transaction.indicador_id || ''}
                 className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
               >
                 <option value="">Selecione um indicador</option>
@@ -262,6 +249,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
             </label>
             <textarea
               name="descricao"
+              defaultValue={transaction.descricao}
               rows={3}
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             />
@@ -290,4 +278,4 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
   );
 };
 
-export default TransactionModal;
+export default TransactionEditModal;

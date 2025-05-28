@@ -1,17 +1,6 @@
 import React from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-
-interface Transaction {
-  id: string;
-  mes: number;
-  ano: number;
-  tipo: 'Receita' | 'Despesa';
-  valor: number;
-  descricao: string;
-  empresa: {
-    razao_social: string;
-  };
-}
+import { Transaction } from '../../types/transaction';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -49,21 +38,22 @@ const TransactionList: React.FC<TransactionListProps> = ({
       <table className="w-full">
         <thead className="bg-dark-750">
           <tr>
-            <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Data</th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Tipo</th>
-            <th className="px-4 py-2 text-right text-sm font-medium text-gray-400">Valor</th>
+            <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Data</th>
+            <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Tipo</th>
+            <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Categoria</th>
+            <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Valor</th>
+            <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Empresa</th>
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Descrição</th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Empresa</th>
-            <th className="px-4 py-2 text-right text-sm font-medium text-gray-400">Ações</th>
+            <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Ações</th>
           </tr>
         </thead>
         <tbody>
           {transactions.map((transaction) => (
             <tr key={transaction.id} className="border-t border-dark-700 hover:bg-dark-700/30">
-              <td className="px-4 py-2 text-sm text-gray-300">
+              <td className="px-4 py-2 text-sm text-center text-gray-300">
                 {`${meses[transaction.mes - 1]}/${transaction.ano}`}
               </td>
-              <td className="px-4 py-2">
+              <td className="px-4 py-2 text-center">
                 <span className={`px-2 py-1 text-xs rounded-full ${
                   transaction.tipo === 'Receita'
                     ? 'bg-green-500/10 text-green-500'
@@ -72,13 +62,18 @@ const TransactionList: React.FC<TransactionListProps> = ({
                   {transaction.tipo}
                 </span>
               </td>
-              <td className="px-4 py-2 text-sm text-right text-white">
+              <td className="px-4 py-2 text-sm text-center text-gray-300">
+                {(transaction as any).categoria?.nome || (transaction as any).indicador?.nome || '-'}
+              </td>
+              <td className="px-4 py-2 text-sm text-center text-white">
                 {formatCurrency(transaction.valor)}
               </td>
+              <td className="px-4 py-2 text-sm text-center text-gray-300">
+                {(transaction.empresa as any).razao_social}
+              </td>
               <td className="px-4 py-2 text-sm text-white">{transaction.descricao}</td>
-              <td className="px-4 py-2 text-sm text-gray-300">{transaction.empresa.razao_social}</td>
               <td className="px-4 py-2">
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-center gap-2">
                   <button
                     onClick={() => onEdit(transaction)}
                     className="p-1.5 text-primary-400 hover:text-primary-300 hover:bg-dark-700 rounded transition-colors"

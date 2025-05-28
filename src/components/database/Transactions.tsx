@@ -3,20 +3,10 @@ import { Search, Plus, Upload } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Category } from '../../types/category';
 import { Indicator } from '../../types/indicator';
+import { Transaction } from '../../types/transaction';
 import TransactionList from './TransactionList';
 import TransactionModal from './TransactionModal';
-
-interface Transaction {
-  id: string;
-  mes: number;
-  ano: number;
-  tipo: 'Receita' | 'Despesa';
-  valor: number;
-  descricao: string;
-  empresa: {
-    razao_social: string;
-  };
-}
+import TransactionEditModal from './TransactionEditModal';
 
 const Transactions: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
@@ -30,6 +20,8 @@ const Transactions: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
     loadInitialData();
@@ -61,7 +53,9 @@ const Transactions: React.FC = () => {
       .from('lancamentos')
       .select(`
         *,
-        empresa:empresas(razao_social)
+        empresa:empresas(razao_social),
+        categoria:categorias(nome),
+        indicador:indicadores(nome)
       `)
       .order('ano', { ascending: false })
       .order('mes', { ascending: false });
@@ -104,8 +98,8 @@ const Transactions: React.FC = () => {
   };
 
   const handleEdit = (transaction: Transaction) => {
-    // Implementar edição
-    console.log('Editar lançamento:', transaction);
+    setSelectedTransaction(transaction);
+    setIsEditModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -127,6 +121,12 @@ const Transactions: React.FC = () => {
   const handleSaveTransaction = async () => {
     await loadTransactions();
     setIsModalOpen(false);
+  };
+
+  const handleSaveEdit = async () => {
+    await loadTransactions();
+    setIsEditModalOpen(false);
+    setSelectedTransaction(null);
   };
 
   const months = [
@@ -276,6 +276,18 @@ const Transactions: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveTransaction}
       />
+
+      {selectedTransaction && (
+        <TransactionEditModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedTransaction(null);
+          }}
+          onSave={handleSaveEdit}
+          transaction={selectedTransaction}
+        />
+      )}
     </div>
   );
 };
