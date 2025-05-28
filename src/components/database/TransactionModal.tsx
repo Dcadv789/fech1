@@ -24,34 +24,65 @@ interface TransactionModalProps {
 const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, onSave }) => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      loadData();
+      loadCompanies();
     } else {
+      setSelectedCompanyId('');
       setSelectedClient(null);
+      setClients([]);
     }
   }, [isOpen]);
 
-  const loadData = async () => {
-    try {
-      const [companiesData, clientsData] = await Promise.all([
-        supabase.from('empresas').select('id, razao_social').order('razao_social'),
-        supabase.from('clientes').select('id, codigo, razao_social').eq('ativo', true).order('razao_social')
-      ]);
-
-      if (companiesData.error) throw companiesData.error;
-      if (clientsData.error) throw clientsData.error;
-
-      setCompanies(companiesData.data || []);
-      setClients(clientsData.data || []);
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      setError('Erro ao carregar dados. Tente novamente.');
+  useEffect(() => {
+    if (selectedCompanyId) {
+      loadClients(selectedCompanyId);
+    } else {
+      setClients([]);
+      setSelectedClient(null);
     }
+  }, [selectedCompanyId]);
+
+  const loadCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('empresas')
+        .select('id, razao_social')
+        .order('razao_social');
+
+      if (error) throw error;
+      setCompanies(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar empresas:', error);
+      setError('Erro ao carregar empresas. Tente novamente.');
+    }
+  };
+
+  const loadClients = async (empresaId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('id, codigo, razao_social')
+        .eq('empresa_id', empresaId)
+        .eq('ativo', true)
+        .order('razao_social');
+
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar clientes:', error);
+      setError('Erro ao carregar clientes. Tente novamente.');
+    }
+  };
+
+  const handleCompanyChange = (empresaId: string) => {
+    setSelectedCompanyId(empresaId);
+    setSelectedClient(null);
   };
 
   const handleClientChange = (clientId: string) => {
@@ -66,14 +97,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
 
     try {
       const formData = new FormData(e.currentTarget);
-      const empresaId = formData.get('empresa_id') as string;
       const mes = Number(formData.get('mes'));
       const ano = Number(formData.get('ano'));
       const valor = Number(formData.get('valor'));
       const descricao = formData.get('descricao') as string;
 
-      // Validações
-      if (!empresaId) {
+      if (!selectedCompanyId) {
         throw new Error('Selecione uma empresa');
       }
 
@@ -94,12 +123,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
       }
 
       const transactionData: CreateTransactionDTO = {
-        empresa_id: empresaId,
+        empresa_id: selectedCompanyId,
         cliente_id: selectedClient.id,
         mes,
         ano,
         valor,
-        tipo: 'Receita', // Sempre será receita
+        tipo: 'Receita',
         descricao
       };
 
@@ -140,7 +169,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
               Empresa *
             </label>
             <select
-              name="empresa_id"
+              value={selectedCompanyId}
+              onChange={(e) => handleCompanyChange(e.target.value)}
               required
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             >
@@ -209,9 +239,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, on
               <select
                 onChange={(e) => handleClientChange(e.target.value)}
                 required
-                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
+                disabled={!selectedCompanyId}
+                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white disabled:opacity-50"
               >
-                <option value="">Selecione um cliente</option>
+                <option value="">
+                  {selectedCompanyId ? 'Selecione um cliente' : 'Selecione uma empresa primeiro'}
+                </option>
                 {clients.map((client) => (
                   <option key={client.id} value={client.id}>
                     {client.razao_social}
