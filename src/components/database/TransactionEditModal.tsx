@@ -23,6 +23,8 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [categories, setCategories] = useState<Category[]>([]);
   const [indicators, setIndicators] = useState<Indicator[]>([]);
   const [selectedType, setSelectedType] = useState<'Receita' | 'Despesa'>(transaction.tipo);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(transaction.categoria_id || '');
+  const [selectedIndicatorId, setSelectedIndicatorId] = useState<string>(transaction.indicador_id || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +55,20 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
     }
   };
 
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    if (categoryId) {
+      setSelectedIndicatorId('');
+    }
+  };
+
+  const handleIndicatorChange = (indicatorId: string) => {
+    setSelectedIndicatorId(indicatorId);
+    if (indicatorId) {
+      setSelectedCategoryId('');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -65,8 +81,6 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       const ano = Number(formData.get('ano'));
       const valor = Number(formData.get('valor'));
       const tipo = formData.get('tipo') as 'Receita' | 'Despesa';
-      const categoriaId = formData.get('categoria_id') as string;
-      const indicadorId = formData.get('indicador_id') as string;
       const descricao = formData.get('descricao') as string;
 
       // Validações
@@ -74,8 +88,7 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       if (!mes || mes < 1 || mes > 12) throw new Error('Mês inválido');
       if (!ano || ano < 2000) throw new Error('Ano inválido');
       if (!valor || valor <= 0) throw new Error('Valor inválido');
-      if (categoriaId && indicadorId) throw new Error('Selecione apenas categoria OU indicador');
-      if (!categoriaId && !indicadorId) throw new Error('Selecione uma categoria ou indicador');
+      if (!selectedCategoryId && !selectedIndicatorId) throw new Error('Selecione uma categoria ou indicador');
 
       await transactionService.updateTransaction(transaction.id, {
         empresa_id: empresaId,
@@ -84,8 +97,8 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         valor,
         tipo,
         descricao,
-        categoria_id: categoriaId || undefined,
-        indicador_id: indicadorId || undefined
+        categoria_id: selectedCategoryId || undefined,
+        indicador_id: selectedIndicatorId || undefined
       });
 
       onSave();
@@ -209,8 +222,8 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                 Categoria
               </label>
               <select
-                name="categoria_id"
-                defaultValue={transaction.categoria_id || ''}
+                value={selectedCategoryId}
+                onChange={(e) => handleCategoryChange(e.target.value)}
                 className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
               >
                 <option value="">Selecione uma categoria</option>
@@ -229,8 +242,8 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                 Indicador
               </label>
               <select
-                name="indicador_id"
-                defaultValue={transaction.indicador_id || ''}
+                value={selectedIndicatorId}
+                onChange={(e) => handleIndicatorChange(e.target.value)}
                 className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
               >
                 <option value="">Selecione um indicador</option>

@@ -18,6 +18,8 @@ const Transactions: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedIndicator, setSelectedIndicator] = useState<string>('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -26,6 +28,10 @@ const Transactions: React.FC = () => {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  useEffect(() => {
+    filterTransactions();
+  }, [transactions, selectedMonth, selectedYear, selectedType, selectedCategory, selectedIndicator, searchTerm]);
 
   const loadInitialData = async () => {
     try {
@@ -95,6 +101,50 @@ const Transactions: React.FC = () => {
 
     if (error) throw error;
     return data;
+  };
+
+  const filterTransactions = () => {
+    let filtered = [...transactions];
+
+    // Filtrar por mês
+    if (selectedMonth !== 'all') {
+      filtered = filtered.filter(transaction => transaction.mes === selectedMonth);
+    }
+
+    // Filtrar por ano
+    if (selectedYear !== 'all') {
+      filtered = filtered.filter(transaction => transaction.ano === selectedYear);
+    }
+
+    // Filtrar por tipo
+    if (selectedType !== 'all') {
+      filtered = filtered.filter(transaction => 
+        transaction.tipo.toLowerCase() === selectedType
+      );
+    }
+
+    // Filtrar por categoria
+    if (selectedCategory) {
+      filtered = filtered.filter(transaction => transaction.categoria_id === selectedCategory);
+    }
+
+    // Filtrar por indicador
+    if (selectedIndicator) {
+      filtered = filtered.filter(transaction => transaction.indicador_id === selectedIndicator);
+    }
+
+    // Filtrar por termo de busca
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(transaction =>
+        transaction.descricao?.toLowerCase().includes(term) ||
+        (transaction as any).categoria?.nome?.toLowerCase().includes(term) ||
+        (transaction as any).indicador?.nome?.toLowerCase().includes(term) ||
+        (transaction as any).empresa?.razao_social?.toLowerCase().includes(term)
+      );
+    }
+
+    setFilteredTransactions(filtered);
   };
 
   const handleEdit = (transaction: Transaction) => {
@@ -185,6 +235,8 @@ const Transactions: React.FC = () => {
             <input
               type="text"
               placeholder="Buscar lançamentos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500"
             />
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
@@ -264,7 +316,7 @@ const Transactions: React.FC = () => {
           </div>
         ) : (
           <TransactionList
-            transactions={transactions}
+            transactions={filteredTransactions}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />

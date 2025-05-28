@@ -38,19 +38,19 @@ const TransactionList: React.FC<TransactionListProps> = ({
       <table className="w-full">
         <thead className="bg-dark-750">
           <tr>
-            <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Data</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Data</th>
             <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Tipo</th>
             <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Categoria</th>
             <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Valor</th>
             <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Empresa</th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Descrição</th>
+            <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Descrição</th>
             <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Ações</th>
           </tr>
         </thead>
         <tbody>
           {transactions.map((transaction) => (
             <tr key={transaction.id} className="border-t border-dark-700 hover:bg-dark-700/30">
-              <td className="px-4 py-2 text-sm text-center text-gray-300">
+              <td className="px-4 py-2 text-sm text-left text-gray-300">
                 {`${meses[transaction.mes - 1]}/${transaction.ano}`}
               </td>
               <td className="px-4 py-2 text-center">
@@ -71,7 +71,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
               <td className="px-4 py-2 text-sm text-center text-gray-300">
                 {(transaction.empresa as any).razao_social}
               </td>
-              <td className="px-4 py-2 text-sm text-white">{transaction.descricao}</td>
+              <td className="px-4 py-2 text-sm text-center text-white">{transaction.descricao}</td>
               <td className="px-4 py-2">
                 <div className="flex justify-center gap-2">
                   <button
