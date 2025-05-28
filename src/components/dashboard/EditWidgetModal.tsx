@@ -108,10 +108,10 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
         .eq('visualizacao_id', widget.id);
 
       // Inserir novos componentes
-      if (selectedItems.length > 0 || tabelaOrigem === 'registro_vendas') {
+      if (selectedItems.length > 0 || tabelaOrigem === 'registro_venda') {
         let componentes = [];
 
-        if (tabelaOrigem === 'registro_vendas') {
+        if (tabelaOrigem === 'registro_venda') {
           componentes.push({
             visualizacao_id: widget.id,
             tabela_origem: tabelaOrigem,
@@ -249,13 +249,13 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
               }}
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             >
-              <option value="registro_vendas">Registro de Vendas</option>
+              <option value="registro_venda">Registro de Vendas</option>
               <option value="indicador">Indicadores</option>
               <option value="categoria">Categorias</option>
             </select>
           </div>
 
-          {tabelaOrigem === 'registro_vendas' ? (
+          {tabelaOrigem === 'registro_venda' ? (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Campo para Exibição *

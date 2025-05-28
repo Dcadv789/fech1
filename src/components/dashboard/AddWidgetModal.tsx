@@ -12,7 +12,7 @@ interface AddWidgetModalProps {
 
 type TipoVisualizacao = 'card' | 'lista' | 'grafico';
 type TipoGrafico = 'bar' | 'line' | 'pie';
-type FonteDados = 'indicadores' | 'categorias' | 'registro_vendas';
+type FonteDados = 'indicador' | 'categoria' | 'registro_venda';
 
 interface OrigemItem {
   id: string;
@@ -32,7 +32,7 @@ const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [tipoVisualizacao, setTipoVisualizacao] = useState<TipoVisualizacao>('card');
   const [tipoGrafico, setTipoGrafico] = useState<TipoGrafico>('bar');
-  const [fonteDados, setFonteDados] = useState<FonteDados>('registro_vendas');
+  const [fonteDados, setFonteDados] = useState<FonteDados>('registro_venda');
   const [itensOrigem, setItensOrigem] = useState<OrigemItem[]>([]);
   const [itensSelecionados, setItensSelecionados] = useState<string[]>([]);
 
@@ -47,21 +47,21 @@ const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
       let { data, error } = { data: null, error: null };
 
       switch (fonteDados) {
-        case 'indicadores':
+        case 'indicador':
           ({ data, error } = await supabase
             .from('indicadores')
             .select('id, nome, codigo')
             .eq('ativo', true)
             .order('nome'));
           break;
-        case 'categorias':
+        case 'categoria':
           ({ data, error } = await supabase
             .from('categorias')
             .select('id, nome, codigo')
             .eq('ativo', true)
             .order('nome'));
           break;
-        case 'registro_vendas':
+        case 'registro_venda':
           ({ data, error } = await supabase
             .from('registro_de_vendas')
             .select('id, registro_venda')
@@ -128,9 +128,9 @@ const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
       const componentes = itensSelecionados.map((itemId, index) => ({
         visualizacao_id: configData.id,
         tabela_origem: fonteDados,
-        indicador_id: fonteDados === 'indicadores' ? itemId : null,
-        categoria_id: fonteDados === 'categorias' ? itemId : null,
-        campo_exibicao: fonteDados === 'registro_vendas' ? 'valor' : null,
+        indicador_id: fonteDados === 'indicador' ? itemId : null,
+        categoria_id: fonteDados === 'categoria' ? itemId : null,
+        campo_exibicao: fonteDados === 'registro_venda' ? 'valor' : null,
         ordem: index + 1
       }));
 
@@ -229,9 +229,9 @@ const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
               }}
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             >
-              <option value="registro_vendas">Registro de Vendas</option>
-              <option value="indicadores">Indicadores</option>
-              <option value="categorias">Categorias</option>
+              <option value="registro_venda">Registro de Vendas</option>
+              <option value="indicador">Indicadores</option>
+              <option value="categoria">Categorias</option>
             </select>
           </div>
 
