@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import AddWidgetModal from '../components/dashboard/AddWidgetModal';
-import CompanyFilter from '../components/CompanyFilter';
+import CompanySelect from '../components/database/CompanySelect';
 
 const DashboardConfigPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,9 +18,11 @@ const DashboardConfigPage: React.FC = () => {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-white">Configuração de Dashboards</h1>
-        <CompanyFilter />
+      <div className="flex justify-between items-start gap-6 mb-6">
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold text-white">Configuração de Dashboards</h1>
+        </div>
+        <CompanySelect />
       </div>
 
       <Tabs 
