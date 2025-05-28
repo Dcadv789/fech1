@@ -42,7 +42,6 @@ const WidgetList: React.FC<WidgetListProps> = ({
             {widgets.some(w => w.tipo_visualizacao === 'grafico') && (
               <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Tipo Gráfico</th>
             )}
-            <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Status</th>
             <th className="px-4 py-2 text-right text-sm font-medium text-gray-400">Ações</th>
           </tr>
         </thead>
@@ -71,15 +70,6 @@ const WidgetList: React.FC<WidgetListProps> = ({
                   )}
                 </td>
               )}
-              <td className="px-4 py-2">
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  widget.ativo
-                    ? 'bg-green-500/10 text-green-500'
-                    : 'bg-red-500/10 text-red-500'
-                }`}>
-                  {widget.ativo ? 'Ativo' : 'Inativo'}
-                </span>
-              </td>
               <td className="px-4 py-2">
                 <div className="flex justify-end gap-2">
                   <button

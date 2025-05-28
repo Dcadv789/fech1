@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, ChevronDown } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import AddWidgetModal from '../components/dashboard/AddWidgetModal';
 import EditWidgetModal from '../components/dashboard/EditWidgetModal';
@@ -44,7 +44,14 @@ const DashboardConfigPage: React.FC = () => {
   };
 
   const filterWidgets = () => {
-    let filtered = widgets;
+    let filtered = [...widgets];
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(widget =>
+        widget.nome_exibicao.toLowerCase().includes(term)
+      );
+    }
 
     if (selectedType !== 'all') {
       filtered = filtered.filter(widget => widget.tipo_visualizacao === selectedType);
@@ -57,14 +64,10 @@ const DashboardConfigPage: React.FC = () => {
     }
 
     if (selectedSource !== 'all') {
-      filtered = filtered.filter(widget => widget.tabela_origem === selectedSource);
-    }
-
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(widget =>
-        widget.nome_exibicao.toLowerCase().includes(term)
-      );
+      filtered = filtered.filter(widget => {
+        const componentes = widget.config_visualizacoes_componentes;
+        return componentes?.some((comp: any) => comp.tabela_origem === selectedSource);
+      });
     }
 
     setFilteredWidgets(filtered);
@@ -106,29 +109,12 @@ const DashboardConfigPage: React.FC = () => {
     await loadWidgets();
   };
 
-  const handleSourceChange = (direction: 'next' | 'prev') => {
-    const sources = ['all', 'indicador', 'categoria', 'registro_vendas'];
-    const currentIndex = sources.indexOf(selectedSource);
-    let newIndex;
-
-    if (direction === 'next') {
-      newIndex = currentIndex === sources.length - 1 ? 0 : currentIndex + 1;
-    } else {
-      newIndex = currentIndex === 0 ? sources.length - 1 : currentIndex - 1;
-    }
-
-    setSelectedSource(sources[newIndex] as any);
-  };
-
-  const getSourceDisplayName = (source: string) => {
-    switch (source) {
-      case 'all': return 'Todas as Fontes';
-      case 'indicador': return 'Indicadores';
-      case 'categoria': return 'Categorias';
-      case 'registro_vendas': return 'Registro de Vendas';
-      default: return source;
-    }
-  };
+  const sourceOptions = [
+    { value: 'all', label: 'Todas as Fontes' },
+    { value: 'indicador', label: 'Indicadores' },
+    { value: 'categoria', label: 'Categorias' },
+    { value: 'registro_vendas', label: 'Registro de Vendas' }
+  ];
 
   return (
     <div className="p-6">
@@ -191,100 +177,98 @@ const DashboardConfigPage: React.FC = () => {
                     <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 bg-dark-800 rounded-lg px-2">
-                      <button
-                        onClick={() => handleSourceChange('prev')}
-                        className="p-2 text-gray-400 hover:text-white transition-colors"
-                      >
-                        <ChevronLeft size={20} />
-                      </button>
-                      <span className="text-white px-2">
-                        {getSourceDisplayName(selectedSource)}
-                      </span>
-                      <button
-                        onClick={() => handleSourceChange('next')}
-                        className="p-2 text-gray-400 hover:text-white transition-colors"
-                      >
-                        <ChevronRight size={20} />
-                      </button>
-                    </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSelectedType('all')}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        selectedType === 'all'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                      }`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      onClick={() => setSelectedType('card')}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        selectedType === 'card'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                      }`}
+                    >
+                      Cards
+                    </button>
+                    <button
+                      onClick={() => setSelectedType('grafico')}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        selectedType === 'grafico'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                      }`}
+                    >
+                      Gráficos
+                    </button>
+                    <button
+                      onClick={() => setSelectedType('lista')}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        selectedType === 'lista'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                      }`}
+                    >
+                      Listas
+                    </button>
+                  </div>
 
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setSelectedType('all')}
-                        className={`px-4 py-2 rounded-lg transition-colors ${
-                          selectedType === 'all'
-                            ? 'bg-primary-600 text-white'
-                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                        }`}
-                      >
-                        Todos
-                      </button>
-                      <button
-                        onClick={() => setSelectedType('card')}
-                        className={`px-4 py-2 rounded-lg transition-colors ${
-                          selectedType === 'card'
-                            ? 'bg-primary-600 text-white'
-                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                        }`}
-                      >
-                        Cards
-                      </button>
-                      <button
-                        onClick={() => setSelectedType('grafico')}
-                        className={`px-4 py-2 rounded-lg transition-colors ${
-                          selectedType === 'grafico'
-                            ? 'bg-primary-600 text-white'
-                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                        }`}
-                      >
-                        Gráficos
-                      </button>
-                      <button
-                        onClick={() => setSelectedType('lista')}
-                        className={`px-4 py-2 rounded-lg transition-colors ${
-                          selectedType === 'lista'
-                            ? 'bg-primary-600 text-white'
-                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                        }`}
-                      >
-                        Listas
-                      </button>
-                    </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSelectedStatus('all')}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        selectedStatus === 'all'
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                      }`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      onClick={() => setSelectedStatus('active')}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        selectedStatus === 'active'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                      }`}
+                    >
+                      Ativos
+                    </button>
+                    <button
+                      onClick={() => setSelectedStatus('inactive')}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        selectedStatus === 'inactive'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
+                      }`}
+                    >
+                      Inativos
+                    </button>
+                  </div>
 
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setSelectedStatus('all')}
-                        className={`px-4 py-2 rounded-lg transition-colors ${
-                          selectedStatus === 'all'
-                            ? 'bg-primary-600 text-white'
-                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                        }`}
-                      >
-                        Todos
-                      </button>
-                      <button
-                        onClick={() => setSelectedStatus('active')}
-                        className={`px-4 py-2 rounded-lg transition-colors ${
-                          selectedStatus === 'active'
-                            ? 'bg-green-600 text-white'
-                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                        }`}
-                      >
-                        Ativos
-                      </button>
-                      <button
-                        onClick={() => setSelectedStatus('inactive')}
-                        className={`px-4 py-2 rounded-lg transition-colors ${
-                          selectedStatus === 'inactive'
-                            ? 'bg-red-600 text-white'
-                            : 'bg-dark-800 text-gray-300 hover:bg-dark-700'
-                        }`}
-                      >
-                        Inativos
-                      </button>
-                    </div>
+                  <div className="relative">
+                    <select
+                      value={selectedSource}
+                      onChange={(e) => setSelectedSource(e.target.value as any)}
+                      className="appearance-none w-48 px-4 py-2 pr-10 bg-dark-800 border border-dark-700 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                    >
+                      {sourceOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown 
+                      size={16} 
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" 
+                    />
                   </div>
                 </div>
               </div>
