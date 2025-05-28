@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { Category } from '../../types/category';
-import { Indicator } from '../../types/indicator';
 import { categoryService } from '../../services/categoryService';
 import { indicatorService } from '../../services/indicatorService';
+import { Category } from '../../types/category';
+import { Indicator } from '../../types/indicator';
 
 interface EditWidgetModalProps {
   isOpen: boolean;
@@ -86,8 +86,7 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
       const widgetData = {
         nome_exibicao: formData.get('nome_exibicao'),
         tipo_visualizacao: tipoVisualizacao,
-        tipo_grafico: tipoVisualizacao === 'grafico' ? tipoGrafico : null,
-        atualizado_em: new Date().toISOString()
+        tipo_grafico: tipoVisualizacao === 'grafico' ? tipoGrafico : null
       };
 
       const { error: updateError } = await supabase
