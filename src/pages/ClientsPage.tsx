@@ -41,7 +41,6 @@ const ClientsPage: React.FC = () => {
       setCompanies(companiesData || []);
       setClients(clientsData || []);
 
-      // TODO: Quando tivermos autenticação, pegar a empresa do usuário logado
       if (companiesData.length > 0) {
         setSelectedCompanyId(companiesData[0].id);
       }
@@ -101,7 +100,8 @@ const ClientsPage: React.FC = () => {
   const handleToggleActive = async (client: Client) => {
     try {
       await clientService.toggleClientActive(client.id, !client.ativo);
-      await loadClients();
+      const updatedClients = await loadClients();
+      setClients(updatedClients);
     } catch (error) {
       console.error('Erro ao alterar status do cliente:', error);
     }
@@ -112,14 +112,16 @@ const ClientsPage: React.FC = () => {
 
     try {
       await clientService.deleteClient(id);
-      await loadClients();
+      const updatedClients = await loadClients();
+      setClients(updatedClients);
     } catch (error) {
       console.error('Erro ao excluir cliente:', error);
     }
   };
 
   const handleSave = async () => {
-    await loadClients();
+    const updatedClients = await loadClients();
+    setClients(updatedClients);
     setIsModalOpen(false);
     setSelectedClient(null);
   };

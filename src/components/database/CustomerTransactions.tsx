@@ -130,19 +130,22 @@ const CustomerTransactions: React.FC = () => {
         .eq('id', id);
 
       if (error) throw error;
-      await loadTransactions();
+      const updatedTransactions = await loadTransactions();
+      setTransactions(updatedTransactions);
     } catch (error) {
       console.error('Erro ao excluir lançamento:', error);
     }
   };
 
   const handleSaveTransaction = async () => {
-    await loadTransactions();
+    const updatedTransactions = await loadTransactions();
+    setTransactions(updatedTransactions);
     setIsModalOpen(false);
   };
 
   const handleSaveEdit = async () => {
-    await loadTransactions();
+    const updatedTransactions = await loadTransactions();
+    setTransactions(updatedTransactions);
     setIsEditModalOpen(false);
     setSelectedTransaction(null);
   };

@@ -40,7 +40,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
           <tr>
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Data</th>
             <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Tipo</th>
-            <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Categoria</th>
+            <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Cliente</th>
             <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Valor</th>
             <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Empresa</th>
             <th className="px-4 py-2 text-center text-sm font-medium text-gray-400">Descrição</th>
@@ -63,7 +63,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                 </span>
               </td>
               <td className="px-4 py-2 text-sm text-center text-gray-300">
-                {(transaction as any).categoria?.nome || (transaction as any).indicador?.nome || '-'}
+                {(transaction as any).cliente?.razao_social || '-'}
               </td>
               <td className="px-4 py-2 text-sm text-center text-white">
                 {formatCurrency(transaction.valor)}
