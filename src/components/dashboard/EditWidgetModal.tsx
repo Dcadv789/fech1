@@ -26,7 +26,9 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [tipoVisualizacao, setTipoVisualizacao] = useState(widget?.tipo_visualizacao || 'card');
   const [tipoGrafico, setTipoGrafico] = useState(widget?.tipo_grafico || 'bar');
-  const [tabelaOrigem, setTabelaOrigem] = useState('indicadores');
+  const [tabelaOrigem, setTabelaOrigem] = useState('indicador');
+  const [ordem, setOrdem] = useState(widget?.ordem || 1);
+  const [campoExibicao, setCampoExibicao] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -62,6 +64,7 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
       if (data && data.length > 0) {
         const firstComponent = data[0];
         setTabelaOrigem(firstComponent.tabela_origem);
+        setCampoExibicao(firstComponent.campo_exibicao || '');
         
         const ids = data.map(comp => 
           comp.indicador_id || comp.categoria_id
@@ -87,6 +90,7 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
         nome_exibicao: formData.get('nome_exibicao'),
         tipo_visualizacao: tipoVisualizacao,
         tipo_grafico: tipoVisualizacao === 'grafico' ? tipoGrafico : null,
+        ordem: ordem,
         modificado_em: new Date().toISOString()
       };
 
@@ -104,14 +108,25 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
         .eq('visualizacao_id', widget.id);
 
       // Inserir novos componentes
-      if (selectedItems.length > 0) {
-        const componentes = selectedItems.map((itemId, index) => ({
-          visualizacao_id: widget.id,
-          tabela_origem: tabelaOrigem,
-          indicador_id: tabelaOrigem === 'indicadores' ? itemId : null,
-          categoria_id: tabelaOrigem === 'categorias' ? itemId : null,
-          ordem: index + 1
-        }));
+      if (selectedItems.length > 0 || tabelaOrigem === 'registro_vendas') {
+        let componentes = [];
+
+        if (tabelaOrigem === 'registro_vendas') {
+          componentes.push({
+            visualizacao_id: widget.id,
+            tabela_origem: tabelaOrigem,
+            campo_exibicao: campoExibicao,
+            ordem: 1
+          });
+        } else {
+          componentes = selectedItems.map((itemId, index) => ({
+            visualizacao_id: widget.id,
+            tabela_origem: tabelaOrigem,
+            indicador_id: tabelaOrigem === 'indicador' ? itemId : null,
+            categoria_id: tabelaOrigem === 'categoria' ? itemId : null,
+            ordem: index + 1
+          }));
+        }
 
         const { error: componentError } = await supabase
           .from('config_visualizacoes_componentes')
@@ -130,6 +145,15 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const camposRegistroVendas = [
+    { value: 'vendedor_id', label: 'Vendedor' },
+    { value: 'sdr_id', label: 'SDR' },
+    { value: 'servico_id', label: 'Serviço' },
+    { value: 'origem', label: 'Origem' },
+    { value: 'nome_cliente', label: 'Nome do Cliente' },
+    { value: 'data_venda', label: 'Data da Venda' }
+  ];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -151,17 +175,31 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
         )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Nome do Widget *
-            </label>
-            <input
-              type="text"
-              name="nome_exibicao"
-              defaultValue={widget.nome_exibicao}
-              required
-              className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Ordem *
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={ordem}
+                onChange={(e) => setOrdem(Number(e.target.value))}
+                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Nome do Widget *
+              </label>
+              <input
+                type="text"
+                name="nome_exibicao"
+                defaultValue={widget.nome_exibicao}
+                required
+                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -207,41 +245,62 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
               onChange={(e) => {
                 setTabelaOrigem(e.target.value);
                 setSelectedItems([]);
+                setCampoExibicao('');
               }}
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             >
-              <option value="indicadores">Indicadores</option>
-              <option value="categorias">Categorias</option>
+              <option value="registro_vendas">Registro de Vendas</option>
+              <option value="indicador">Indicadores</option>
+              <option value="categoria">Categorias</option>
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Selecionar Itens *
-            </label>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {(tabelaOrigem === 'indicadores' ? indicators : categories).map((item) => (
-                <label key={item.id} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedItems.includes(item.id)}
-                    onChange={() => {
-                      setSelectedItems(prev => {
-                        if (prev.includes(item.id)) {
-                          return prev.filter(id => id !== item.id);
-                        }
-                        return [...prev, item.id];
-                      });
-                    }}
-                    className="form-checkbox h-4 w-4 text-primary-600"
-                  />
-                  <span className="text-sm text-gray-300">
-                    {item.nome}
-                  </span>
-                </label>
-              ))}
+          {tabelaOrigem === 'registro_vendas' ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Campo para Exibição *
+              </label>
+              <select
+                value={campoExibicao}
+                onChange={(e) => setCampoExibicao(e.target.value)}
+                required
+                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
+              >
+                <option value="">Selecione um campo</option>
+                {camposRegistroVendas.map(campo => (
+                  <option key={campo.value} value={campo.value}>
+                    {campo.label}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Selecionar Itens *
+              </label>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {(tabelaOrigem === 'indicador' ? indicators : categories).map((item) => (
+                  <label key={item.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.includes(item.id)}
+                      onChange={() => {
+                        setSelectedItems(prev => {
+                          if (prev.includes(item.id)) {
+                            return prev.filter(id => id !== item.id);
+                          }
+                          return [...prev, item.id];
+                        });
+                      }}
+                      className="form-checkbox h-4 w-4 text-primary-600"
+                    />
+                    <span className="text-white">{item.nome}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-4 pt-4">
             <button

@@ -3,6 +3,7 @@ import { Pencil, Trash2, Power } from 'lucide-react';
 
 interface Widget {
   id: string;
+  ordem: number;
   nome_exibicao: string;
   tipo_visualizacao: 'card' | 'lista' | 'grafico';
   tipo_grafico?: 'bar' | 'line' | 'pie';
@@ -35,15 +36,20 @@ const WidgetList: React.FC<WidgetListProps> = ({
       <table className="w-full">
         <thead className="bg-dark-750">
           <tr>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Ordem</th>
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Nome</th>
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Tipo</th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Status</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Origem</th>
+            {widgets.some(w => w.tipo_visualizacao === 'grafico') && (
+              <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">Tipo Gráfico</th>
+            )}
             <th className="px-4 py-2 text-right text-sm font-medium text-gray-400">Ações</th>
           </tr>
         </thead>
         <tbody>
           {widgets.map((widget) => (
             <tr key={widget.id} className="border-t border-dark-700 hover:bg-dark-700/30">
+              <td className="px-4 py-2 text-sm text-white">{widget.ordem}</td>
               <td className="px-4 py-2 text-sm text-white">{widget.nome_exibicao}</td>
               <td className="px-4 py-2">
                 <span className={`px-2 py-1 text-xs rounded-full ${
@@ -54,18 +60,22 @@ const WidgetList: React.FC<WidgetListProps> = ({
                     : 'bg-purple-500/10 text-purple-500'
                 }`}>
                   {widget.tipo_visualizacao.charAt(0).toUpperCase() + widget.tipo_visualizacao.slice(1)}
-                  {widget.tipo_grafico && ` (${widget.tipo_grafico})`}
                 </span>
               </td>
               <td className="px-4 py-2">
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  widget.ativo
-                    ? 'bg-green-500/10 text-green-500'
-                    : 'bg-red-500/10 text-red-500'
-                }`}>
-                  {widget.ativo ? 'Ativo' : 'Inativo'}
+                <span className="px-2 py-1 text-xs rounded-full bg-gray-500/10 text-gray-300">
+                  {widget.tabela_origem}
                 </span>
               </td>
+              {widgets.some(w => w.tipo_visualizacao === 'grafico') && (
+                <td className="px-4 py-2">
+                  {widget.tipo_visualizacao === 'grafico' && (
+                    <span className="px-2 py-1 text-xs rounded-full bg-yellow-500/10 text-yellow-500">
+                      {widget.tipo_grafico}
+                    </span>
+                  )}
+                </td>
+              )}
               <td className="px-4 py-2">
                 <div className="flex justify-end gap-2">
                   <button
