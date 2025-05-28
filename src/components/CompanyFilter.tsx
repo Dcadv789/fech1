@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Building2, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -8,9 +8,9 @@ interface Company {
 }
 
 const CompanyFilter: React.FC = () => {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [companies, setCompanies] = React.useState<Company[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = React.useState<string>('');
+  const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
     loadCompanies();
@@ -33,16 +33,11 @@ const CompanyFilter: React.FC = () => {
   };
 
   return (
-    <div className="bg-dark-900/95 backdrop-blur-sm rounded-xl border border-dark-800 p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Building2 size={20} className="text-gray-400" />
-        <span className="text-sm font-medium text-gray-300">Empresa</span>
-      </div>
+    <div className="flex items-center gap-2">
+      <Building2 size={20} className="text-gray-400" />
       <div className="relative">
         <select 
-          value={selectedCompanyId}
-          onChange={(e) => setSelectedCompanyId(e.target.value)}
-          className="w-full appearance-none bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500"
+          className="appearance-none w-48 px-4 py-2 pr-10 bg-dark-800 border border-dark-700 rounded-lg text-white focus:outline-none focus:border-primary-500"
           disabled={isLoading}
         >
           <option value="">Todas as empresas</option>
