@@ -10,6 +10,7 @@ const DashboardConfigPage: React.FC = () => {
   const [selectedType, setSelectedType] = useState<'all' | 'card' | 'lista' | 'grafico'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
   const handleSaveWidget = () => {
     setIsModalOpen(false);
@@ -22,7 +23,10 @@ const DashboardConfigPage: React.FC = () => {
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-white">Configuração de Dashboards</h1>
         </div>
-        <CompanySelect />
+        <CompanySelect 
+          value={selectedCompanyId}
+          onChange={setSelectedCompanyId}
+        />
       </div>
 
       <Tabs 
@@ -53,7 +57,8 @@ const DashboardConfigPage: React.FC = () => {
                 </div>
                 <button 
                   onClick={() => setIsModalOpen(true)}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+                  disabled={!selectedCompanyId}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2 disabled:opacity-50"
                 >
                   <Plus size={20} />
                   Novo Widget
@@ -166,6 +171,7 @@ const DashboardConfigPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveWidget}
         pagina={selectedTab}
+        selectedCompanyId={selectedCompanyId}
       />
     </div>
   );

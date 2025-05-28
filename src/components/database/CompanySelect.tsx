@@ -4,9 +4,11 @@ import { supabase } from '../../lib/supabase';
 
 interface CompanySelectProps {
   className?: string;
+  value?: string;
+  onChange?: (value: string) => void;
 }
 
-const CompanySelect: React.FC<CompanySelectProps> = ({ className = '' }) => {
+const CompanySelect: React.FC<CompanySelectProps> = ({ className = '', value, onChange }) => {
   const [companies, setCompanies] = useState<{ id: string; razao_social: string; }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -23,6 +25,11 @@ const CompanySelect: React.FC<CompanySelectProps> = ({ className = '' }) => {
 
       if (error) throw error;
       setCompanies(data || []);
+      
+      // Se não houver valor selecionado e houver empresas, selecionar a primeira
+      if (!value && data && data.length > 0 && onChange) {
+        onChange(data[0].id);
+      }
     } catch (error) {
       console.error('Erro ao carregar empresas:', error);
     } finally {
@@ -35,6 +42,8 @@ const CompanySelect: React.FC<CompanySelectProps> = ({ className = '' }) => {
       <Building2 size={20} className="text-gray-400 flex-shrink-0" />
       <div className="relative flex-1">
         <select 
+          value={value}
+          onChange={(e) => onChange?.(e.target.value)}
           className="w-full appearance-none px-4 py-2 pr-10 bg-dark-800 border border-dark-700 rounded-lg text-white focus:outline-none focus:border-primary-500"
           disabled={isLoading}
         >
