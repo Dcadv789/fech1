@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import AddWidgetModal from '../components/dashboard/AddWidgetModal';
+import EditWidgetModal from '../components/dashboard/EditWidgetModal';
+import WidgetList from '../components/dashboard/WidgetList';
 import CompanySelect from '../components/database/CompanySelect';
+import { widgetService } from '../services/widgetService';
 
 const DashboardConfigPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -10,11 +13,92 @@ const DashboardConfigPage: React.FC = () => {
   const [selectedType, setSelectedType] = useState<'all' | 'card' | 'lista' | 'grafico'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [widgets, setWidgets] = useState<any[]>([]);
+  const [filteredWidgets, setFilteredWidgets] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedWidget, setSelectedWidget] = useState<any>(null);
 
-  const handleSaveWidget = () => {
+  useEffect(() => {
+    if (selectedCompanyId) {
+      loadWidgets();
+    }
+  }, [selectedCompanyId, selectedTab]);
+
+  useEffect(() => {
+    filterWidgets();
+  }, [widgets, selectedType, selectedStatus, searchTerm]);
+
+  const loadWidgets = async () => {
+    try {
+      setIsLoading(true);
+      const data = await widgetService.getWidgetsByPage(selectedTab, selectedCompanyId);
+      setWidgets(data);
+    } catch (error) {
+      console.error('Erro ao carregar widgets:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filterWidgets = () => {
+    let filtered = widgets;
+
+    if (selectedType !== 'all') {
+      filtered = filtered.filter(widget => widget.tipo_visualizacao === selectedType);
+    }
+
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter(widget => 
+        selectedStatus === 'active' ? widget.ativo : !widget.ativo
+      );
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(widget =>
+        widget.nome_exibicao.toLowerCase().includes(term)
+      );
+    }
+
+    setFilteredWidgets(filtered);
+  };
+
+  const handleEdit = (widget: any) => {
+    setSelectedWidget(widget);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este widget?')) return;
+
+    try {
+      await widgetService.deleteWidget(id);
+      await loadWidgets();
+    } catch (error) {
+      console.error('Erro ao excluir widget:', error);
+    }
+  };
+
+  const handleToggleActive = async (widget: any) => {
+    try {
+      await widgetService.toggleWidgetActive(widget.id, !widget.ativo);
+      await loadWidgets();
+    } catch (error) {
+      console.error('Erro ao alterar status do widget:', error);
+    }
+  };
+
+  const handleSaveWidget = async () => {
     setIsModalOpen(false);
-    // Recarregar widgets
+    await loadWidgets();
+  };
+
+  const handleSaveEdit = async () => {
+    setIsEditModalOpen(false);
+    setSelectedWidget(null);
+    await loadWidgets();
   };
 
   return (
@@ -157,9 +241,18 @@ const DashboardConfigPage: React.FC = () => {
               </div>
 
               <div className="bg-dark-900/95 backdrop-blur-sm rounded-xl border border-dark-800 p-6">
-                <div className="text-center py-8 text-gray-400">
-                  Nenhum widget configurado para esta página.
-                </div>
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400">Carregando widgets...</p>
+                  </div>
+                ) : (
+                  <WidgetList
+                    widgets={filteredWidgets}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onToggleActive={handleToggleActive}
+                  />
+                )}
               </div>
             </div>
           </TabsContent>
@@ -173,6 +266,18 @@ const DashboardConfigPage: React.FC = () => {
         pagina={selectedTab}
         selectedCompanyId={selectedCompanyId}
       />
+
+      {selectedWidget && (
+        <EditWidgetModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedWidget(null);
+          }}
+          onSave={handleSaveEdit}
+          widget={selectedWidget}
+        />
+      )}
     </div>
   );
 };
