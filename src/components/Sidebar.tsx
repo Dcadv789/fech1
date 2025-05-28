@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, TrendingUp, BarChart2, FileText, Users, LineChart } from 'lucide-react';
+import { Home, TrendingUp, BarChart2, FileText, Users, LineChart, UserCircle } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
   const navItems = [
@@ -9,6 +9,7 @@ const Sidebar: React.FC = () => {
     { name: 'Análise', path: '/analise', icon: <BarChart2 size={20} /> },
     { name: 'DRE', path: '/dre', icon: <FileText size={20} /> },
     { name: 'Clientes', path: '/clientes', icon: <Users size={20} /> },
+    { name: 'Pessoas', path: '/pessoas', icon: <UserCircle size={20} /> },
     { name: 'Gráficos', path: '/graficos', icon: <LineChart size={20} /> },
   ];
 
@@ -43,4 +44,4 @@ const Sidebar: React.FC = () => {
   );
 };
 
-export default Sidebar
+export default Sidebar;

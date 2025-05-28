@@ -12,6 +12,7 @@ import CompaniesPage from './pages/CompaniesPage';
 import DatabasePage from './pages/DatabasePage';
 import DashboardConfigPage from './pages/DashboardConfigPage';
 import DreConfigPage from './pages/DreConfigPage';
+import PeoplePage from './pages/PeoplePage';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <Route path="/banco-dados" element={<DatabasePage />} />
           <Route path="/config-dashboards" element={<DashboardConfigPage />} />
           <Route path="/config-dre" element={<DreConfigPage />} />
+          <Route path="/pessoas" element={<PeoplePage />} />
         </Routes>
       </Layout>
     </Router>
