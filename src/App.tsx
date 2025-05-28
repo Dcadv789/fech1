@@ -10,7 +10,7 @@ import ChartsPage from './pages/ChartsPage';
 import UsersPage from './pages/UsersPage';
 import CompaniesPage from './pages/CompaniesPage';
 import DatabasePage from './pages/DatabasePage';
-import VisualConfigPage from './pages/VisualConfigPage';
+import DashboardConfigPage from './pages/DashboardConfigPage';
 import DreConfigPage from './pages/DreConfigPage';
 
 function App() {
@@ -27,7 +27,7 @@ function App() {
           <Route path="/usuarios" element={<UsersPage />} />
           <Route path="/empresas" element={<CompaniesPage />} />
           <Route path="/banco-dados" element={<DatabasePage />} />
-          <Route path="/config-visual" element={<VisualConfigPage />} />
+          <Route path="/config-dashboards" element={<DashboardConfigPage />} />
           <Route path="/config-dre" element={<DreConfigPage />} />
         </Routes>
       </Layout>

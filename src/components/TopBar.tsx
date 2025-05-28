@@ -32,6 +32,11 @@ const TopBar: React.FC = () => {
     setIsProfileMenuOpen(false);
   };
 
+  const handleMenuItemClick = () => {
+    setIsSettingsMenuOpen(false);
+    setIsProfileMenuOpen(false);
+  };
+
   return (
     <header className="sticky top-0 z-10 bg-dark-900 my-4 rounded-2xl shadow-lg border border-dark-900">
       <div className="px-6">
@@ -60,7 +65,7 @@ const TopBar: React.FC = () => {
                   }`}
                 />
               </button>
-              {isSettingsMenuOpen && <SettingsMenu />}
+              {isSettingsMenuOpen && <SettingsMenu onItemClick={handleMenuItemClick} />}
             </div>
             <div className="relative">
               <button
@@ -76,13 +81,13 @@ const TopBar: React.FC = () => {
                 </div>
                 <ChevronDown size={16} className="text-dark-400" />
               </button>
-              {isProfileMenuOpen && <ProfileMenu />}
+              {isProfileMenuOpen && <ProfileMenu onClose={handleMenuItemClick} />}
             </div>
           </div>
         </div>
       </div>
     </header>
   );
-};
+}
 
-export default TopBar;
+export default TopBar
